@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'services/supabase_service.dart'; // Supabase sync - see docs/SUPABASE.md
 
 /// Model class for a single user's update
 class UserUpdate {
@@ -291,6 +292,28 @@ class UpdateHistoryService {
         user2ImagePath: user2ImagePath,
         user2ColorHex: user2ColorHex,
       );
+
+      // Sync to Supabase (see docs/SUPABASE.md for removal)
+      if (user1ImagePath?.isNotEmpty == true || user1Text?.isNotEmpty == true) {
+        await SupabaseService.syncUpdate(
+          id: '${now.millisecondsSinceEpoch}_tanmay',
+          userId: 'tanmay',
+          userName: 'Tanmay',
+          text: user1Text,
+          localImagePath: user1ImagePath,
+          colorHex: user1ColorHex,
+        );
+      }
+      if (user2ImagePath?.isNotEmpty == true || user2Text?.isNotEmpty == true) {
+        await SupabaseService.syncUpdate(
+          id: '${now.millisecondsSinceEpoch}_aanchal',
+          userId: 'aanchal',
+          userName: 'Aanchal',
+          text: user2Text,
+          localImagePath: user2ImagePath,
+          colorHex: user2ColorHex,
+        );
+      }
     } catch (e) {
       debugPrint('Error saving update to history: $e');
     }

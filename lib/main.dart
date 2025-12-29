@@ -9,6 +9,7 @@ import 'drawing_canvas_page.dart';
 import 'update_history_service.dart';
 import 'login_page.dart';
 import 'user_home_page.dart';
+import 'services/supabase_service.dart'; // Supabase sync - see docs/SUPABASE.md
 
 // Global theme mode notifier
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
@@ -17,6 +18,9 @@ final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase (see docs/SUPABASE.md for removal)
+  await SupabaseService.initialize();
 
   // Load saved theme preference
   final prefs = await SharedPreferences.getInstance();
