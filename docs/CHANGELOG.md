@@ -2,6 +2,42 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.0.0] - 2025-12-29
+
+### Added
+
+#### User Login System
+- **Login Page**
+  - Two styled buttons: "Login as Tanmay" and "Login as Aanchal"
+  - Beautiful gradient design with app branding
+  - Seamless navigation to user-specific home page
+
+- **User-Specific Home Page**
+  - Personalized greeting ("Hi, Tanmay!" or "Hi, Aanchal!")
+  - Shows only the logged-in user's update card
+  - Widget preview displays both users' content
+  - Logout button to switch between users
+
+- **Named Routes**
+  - `/login` - Login page (initial route)
+  - `/home` - User home page with userNumber argument
+
+### Changed
+
+- Widget labels changed from "User 1/User 2" to "Tanmay/Aanchal"
+- App now starts with login page instead of direct home
+- Simplified user experience - each user sees only their controls
+
+### Technical Details
+
+- New files:
+  - `login_page.dart` - Login screen with user selection
+  - `user_home_page.dart` - User-specific home page
+- Updated `main.dart` with route-based navigation
+- Updated Android widget XML with proper names
+
+---
+
 ## [2.0.0] - 2025-12-29
 
 ### Added

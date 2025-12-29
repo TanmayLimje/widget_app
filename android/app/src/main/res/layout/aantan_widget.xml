@@ -17,12 +17,12 @@
         android:orientation="vertical"
         android:padding="8dp">
 
-        <!-- User 1 Name -->
+        <!-- Tanmay Name -->
         <TextView
             android:id="@+id/user1_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="User 1"
+            android:text="Tanmay"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -37,7 +37,7 @@
             android:layout_marginBottom="6dp"
             android:scaleType="centerCrop"
             android:background="@drawable/image_placeholder"
-            android:contentDescription="User 1 Update" />
+            android:contentDescription="Tanmay Update" />
 
         <!-- User 1 Text (optional) -->
         <TextView
@@ -65,12 +65,12 @@
         android:orientation="vertical"
         android:padding="8dp">
 
-        <!-- User 2 Name -->
+        <!-- Aanchal Name -->
         <TextView
             android:id="@+id/user2_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="User 2"
+            android:text="Aanchal"
             android:textColor="#FFFFFF"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -85,7 +85,7 @@
             android:layout_marginBottom="6dp"
             android:scaleType="centerCrop"
             android:background="@drawable/image_placeholder"
-            android:contentDescription="User 2 Update" />
+            android:contentDescription="Aanchal Update" />
 
         <!-- User 2 Text (optional) -->
         <TextView

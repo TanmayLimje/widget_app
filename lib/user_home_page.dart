@@ -4,142 +4,40 @@ import 'package:home_widget/home_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'past_updates_page.dart';
 import 'drawing_canvas_page.dart';
 import 'update_history_service.dart';
-import 'login_page.dart';
-import 'user_home_page.dart';
+import 'past_updates_page.dart';
+import 'main.dart'; // For themeModeNotifier and availableThemes
 
-// Global theme mode notifier
-final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
-  ThemeMode.system,
-);
+/// User-specific home page that shows only the logged-in user's controls
+class UserHomePage extends StatefulWidget {
+  final int userNumber;
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Load saved theme preference
-  final prefs = await SharedPreferences.getInstance();
-  final savedTheme = prefs.getString('theme_mode') ?? 'system';
-  themeModeNotifier.value = _themeModeFromString(savedTheme);
-
-  runApp(const AanTanApp());
-}
-
-ThemeMode _themeModeFromString(String value) {
-  switch (value) {
-    case 'light':
-      return ThemeMode.light;
-    case 'dark':
-      return ThemeMode.dark;
-    default:
-      return ThemeMode.system;
-  }
-}
-
-String _themeModeToString(ThemeMode mode) {
-  switch (mode) {
-    case ThemeMode.light:
-      return 'light';
-    case ThemeMode.dark:
-      return 'dark';
-    case ThemeMode.system:
-      return 'system';
-  }
-}
-
-// Available color themes
-class UserTheme {
-  final String name;
-  final Color color;
-  final String hexCode;
-
-  const UserTheme(this.name, this.color, this.hexCode);
-}
-
-final List<UserTheme> availableThemes = [
-  const UserTheme('Purple', Color(0xFF6366F1), 'FF6366F1'),
-  const UserTheme('Blue', Color(0xFF3B82F6), 'FF3B82F6'),
-  const UserTheme('Green', Color(0xFF10B981), 'FF10B981'),
-  const UserTheme('Orange', Color(0xFFF97316), 'FFF97316'),
-  const UserTheme('Pink', Color(0xFFEC4899), 'FFEC4899'),
-  const UserTheme('Red', Color(0xFFEF4444), 'FFEF4444'),
-  const UserTheme('Teal', Color(0xFF14B8A6), 'FF14B8A6'),
-  const UserTheme('Yellow', Color(0xFFEAB308), 'FFEAB308'),
-];
-
-class AanTanApp extends StatelessWidget {
-  const AanTanApp({super.key});
+  const UserHomePage({super.key, required this.userNumber});
 
   @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeModeNotifier,
-      builder: (context, themeMode, child) {
-        return MaterialApp(
-          title: 'AanTan',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6366F1),
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6366F1),
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
-          themeMode: themeMode,
-          initialRoute: '/login',
-          onGenerateRoute: (settings) {
-            switch (settings.name) {
-              case '/login':
-                return MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
-                );
-              case '/home':
-                final userNumber = settings.arguments as int? ?? 1;
-                return MaterialPageRoute(
-                  builder: (context) => UserHomePage(userNumber: userNumber),
-                );
-              default:
-                return MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
-                );
-            }
-          },
-        );
-      },
-    );
-  }
+  State<UserHomePage> createState() => _UserHomePageState();
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final TextEditingController _user1Controller = TextEditingController();
-  final TextEditingController _user2Controller = TextEditingController();
+class _UserHomePageState extends State<UserHomePage> {
+  final TextEditingController _textController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
 
+  String _userText = '';
+  UserTheme _userTheme = availableThemes[0];
+  String? _userImagePath;
+
+  // Store both users' data for widget preview
   String _user1Text = '';
   String _user2Text = '';
-
-  UserTheme _user1Theme = availableThemes[0]; // Purple
-  UserTheme _user2Theme = availableThemes[1]; // Blue
-
+  UserTheme _user1Theme = availableThemes[0];
+  UserTheme _user2Theme = availableThemes[1];
   String? _user1ImagePath;
   String? _user2ImagePath;
 
   bool _isUpdating = false;
+
+  String get _userName => widget.userNumber == 1 ? 'Tanmay' : 'Aanchal';
 
   @override
   void initState() {
@@ -150,7 +48,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initHomeWidget() async {
     await HomeWidget.setAppGroupId('group.com.example.aantan');
 
-    // Load saved data
+    // Load all saved data for preview
     final savedUser1Text = await HomeWidget.getWidgetData<String>('user1_text');
     final savedUser2Text = await HomeWidget.getWidgetData<String>('user2_text');
     final savedUser1Color = await HomeWidget.getWidgetData<String>(
@@ -167,31 +65,52 @@ class _HomePageState extends State<HomePage> {
     );
 
     setState(() {
+      // Load User 1 data
       if (savedUser1Text != null) {
         _user1Text = savedUser1Text;
-        _user1Controller.text = savedUser1Text;
-      }
-      if (savedUser2Text != null) {
-        _user2Text = savedUser2Text;
-        _user2Controller.text = savedUser2Text;
+        if (widget.userNumber == 1) {
+          _userText = savedUser1Text;
+          _textController.text = savedUser1Text;
+        }
       }
       if (savedUser1Color != null) {
         _user1Theme = availableThemes.firstWhere(
           (t) => t.hexCode == savedUser1Color,
           orElse: () => availableThemes[0],
         );
+        if (widget.userNumber == 1) {
+          _userTheme = _user1Theme;
+        }
+      }
+      if (savedUser1Image != null && File(savedUser1Image).existsSync()) {
+        _user1ImagePath = savedUser1Image;
+        if (widget.userNumber == 1) {
+          _userImagePath = savedUser1Image;
+        }
+      }
+
+      // Load User 2 data
+      if (savedUser2Text != null) {
+        _user2Text = savedUser2Text;
+        if (widget.userNumber == 2) {
+          _userText = savedUser2Text;
+          _textController.text = savedUser2Text;
+        }
       }
       if (savedUser2Color != null) {
         _user2Theme = availableThemes.firstWhere(
           (t) => t.hexCode == savedUser2Color,
           orElse: () => availableThemes[1],
         );
-      }
-      if (savedUser1Image != null && File(savedUser1Image).existsSync()) {
-        _user1ImagePath = savedUser1Image;
+        if (widget.userNumber == 2) {
+          _userTheme = _user2Theme;
+        }
       }
       if (savedUser2Image != null && File(savedUser2Image).existsSync()) {
         _user2ImagePath = savedUser2Image;
+        if (widget.userNumber == 2) {
+          _userImagePath = savedUser2Image;
+        }
       }
     });
   }
@@ -214,7 +133,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _pickImage(int userNumber) async {
+  Future<void> _pickImage() async {
     final result = await showModalBottomSheet<dynamic>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -231,11 +150,8 @@ class _HomePageState extends State<HomePage> {
       );
       if (drawingPath != null) {
         setState(() {
-          if (userNumber == 1) {
-            _user1ImagePath = drawingPath;
-          } else {
-            _user2ImagePath = drawingPath;
-          }
+          _userImagePath = drawingPath;
+          _syncUserData();
         });
       }
       return;
@@ -251,14 +167,14 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (image != null) {
-        final savedPath = await _saveImageLocally(image, 'user$userNumber');
+        final savedPath = await _saveImageLocally(
+          image,
+          'user${widget.userNumber}',
+        );
         if (savedPath != null) {
           setState(() {
-            if (userNumber == 1) {
-              _user1ImagePath = savedPath;
-            } else {
-              _user2ImagePath = savedPath;
-            }
+            _userImagePath = savedPath;
+            _syncUserData();
           });
         }
       }
@@ -267,14 +183,24 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _removeImage(int userNumber) {
+  void _removeImage() {
     setState(() {
-      if (userNumber == 1) {
-        _user1ImagePath = null;
-      } else {
-        _user2ImagePath = null;
-      }
+      _userImagePath = null;
+      _syncUserData();
     });
+  }
+
+  void _syncUserData() {
+    // Sync current user's data with the appropriate user slot
+    if (widget.userNumber == 1) {
+      _user1ImagePath = _userImagePath;
+      _user1Theme = _userTheme;
+      _user1Text = _userText;
+    } else {
+      _user2ImagePath = _userImagePath;
+      _user2Theme = _userTheme;
+      _user2Text = _userText;
+    }
   }
 
   Widget _buildImageSourceSheet(BuildContext context) {
@@ -360,30 +286,36 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isUpdating = true);
 
     try {
-      final user1Text = _user1Controller.text.trim();
-      final user2Text = _user2Controller.text.trim();
+      final userText = _textController.text.trim();
 
-      // Save data for both users
-      await HomeWidget.saveWidgetData<String>('user1_text', user1Text);
-      await HomeWidget.saveWidgetData<String>('user2_text', user2Text);
-      await HomeWidget.saveWidgetData<String>(
-        'user1_color',
-        _user1Theme.hexCode,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'user2_color',
-        _user2Theme.hexCode,
-      );
+      // Update local state
+      setState(() {
+        _userText = userText;
+        _syncUserData();
+      });
 
-      // Save image paths (or empty string if no image)
-      await HomeWidget.saveWidgetData<String>(
-        'user1_image',
-        _user1ImagePath ?? '',
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'user2_image',
-        _user2ImagePath ?? '',
-      );
+      // Save data based on which user is logged in
+      if (widget.userNumber == 1) {
+        await HomeWidget.saveWidgetData<String>('user1_text', userText);
+        await HomeWidget.saveWidgetData<String>(
+          'user1_color',
+          _userTheme.hexCode,
+        );
+        await HomeWidget.saveWidgetData<String>(
+          'user1_image',
+          _userImagePath ?? '',
+        );
+      } else {
+        await HomeWidget.saveWidgetData<String>('user2_text', userText);
+        await HomeWidget.saveWidgetData<String>(
+          'user2_color',
+          _userTheme.hexCode,
+        );
+        await HomeWidget.saveWidgetData<String>(
+          'user2_image',
+          _userImagePath ?? '',
+        );
+      }
 
       // Update the widget
       await HomeWidget.updateWidget(
@@ -393,18 +325,26 @@ class _HomePageState extends State<HomePage> {
 
       // Save to update history
       await UpdateHistoryService.saveUpdate(
-        user1Text: user1Text.isNotEmpty ? user1Text : null,
-        user1ImagePath: _user1ImagePath,
-        user1ColorHex: _user1Theme.hexCode,
-        user2Text: user2Text.isNotEmpty ? user2Text : null,
-        user2ImagePath: _user2ImagePath,
-        user2ColorHex: _user2Theme.hexCode,
+        user1Text: widget.userNumber == 1
+            ? (userText.isNotEmpty ? userText : null)
+            : (_user1Text.isNotEmpty ? _user1Text : null),
+        user1ImagePath: widget.userNumber == 1
+            ? _userImagePath
+            : _user1ImagePath,
+        user1ColorHex: widget.userNumber == 1
+            ? _userTheme.hexCode
+            : _user1Theme.hexCode,
+        user2Text: widget.userNumber == 2
+            ? (userText.isNotEmpty ? userText : null)
+            : (_user2Text.isNotEmpty ? _user2Text : null),
+        user2ImagePath: widget.userNumber == 2
+            ? _userImagePath
+            : _user2ImagePath,
+        user2ColorHex: widget.userNumber == 2
+            ? _userTheme.hexCode
+            : _user2Theme.hexCode,
       );
 
-      setState(() {
-        _user1Text = user1Text;
-        _user2Text = user2Text;
-      });
       _showSnackBar('Widget updated successfully!');
     } catch (e) {
       _showSnackBar('Failed to update widget: $e', isError: true);
@@ -547,10 +487,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  String _themeModeToString(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.system:
+        return 'system';
+    }
+  }
+
   @override
   void dispose() {
-    _user1Controller.dispose();
-    _user2Controller.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
@@ -578,29 +528,45 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const SizedBox(height: 20),
 
-                // Header with Theme Toggle
+                // Header with Theme Toggle and Logout
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Spacer(),
-                    Text(
-                      'AanTan',
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+                    // Logout button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withOpacity(
+                          0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                        icon: Icon(
+                          Icons.logout_rounded,
+                          color: colorScheme.primary,
+                        ),
+                        tooltip: 'Switch user',
                       ),
                     ),
                     Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _buildThemeToggleButton(context),
+                      child: Text(
+                        'Hi, $_userName!',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
+                    _buildThemeToggleButton(context),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Share Updates Widget',
+                  'Update your widget',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.6),
                   ),
@@ -610,211 +576,12 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 30),
 
                 // Widget Preview
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Widget Preview',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Preview mimics the actual widget layout
-                      SizedBox(
-                        height: 180,
-                        child: Row(
-                          children: [
-                            // User 1 Preview
-                            Expanded(
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 2),
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: _user1Theme.color,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(12),
-                                    bottomLeft: Radius.circular(12),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    // Username
-                                    Text(
-                                      'User 1',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    // Update Image
-                                    Expanded(
-                                      child: Container(
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          image: _user1ImagePath != null
-                                              ? DecorationImage(
-                                                  image: FileImage(
-                                                    File(_user1ImagePath!),
-                                                  ),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
-                                        ),
-                                        child: _user1ImagePath == null
-                                            ? Icon(
-                                                Icons.image_outlined,
-                                                color: Colors.white.withOpacity(
-                                                  0.5,
-                                                ),
-                                                size: 40,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    // Text
-                                    if (_user1Text.isNotEmpty)
-                                      Text(
-                                        _user1Text,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // User 2 Preview
-                            Expanded(
-                              child: Container(
-                                margin: const EdgeInsets.only(left: 2),
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: _user2Theme.color,
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(12),
-                                    bottomRight: Radius.circular(12),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    // Username
-                                    Text(
-                                      'User 2',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    // Update Image
-                                    Expanded(
-                                      child: Container(
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          image: _user2ImagePath != null
-                                              ? DecorationImage(
-                                                  image: FileImage(
-                                                    File(_user2ImagePath!),
-                                                  ),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
-                                        ),
-                                        child: _user2ImagePath == null
-                                            ? Icon(
-                                                Icons.image_outlined,
-                                                color: Colors.white.withOpacity(
-                                                  0.5,
-                                                ),
-                                                size: 40,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    // Text
-                                    if (_user2Text.isNotEmpty)
-                                      Text(
-                                        _user2Text,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildWidgetPreview(context),
 
                 const SizedBox(height: 24),
 
-                // User 1 Card
-                _buildUserCard(
-                  context: context,
-                  title: 'User 1',
-                  userNumber: 1,
-                  controller: _user1Controller,
-                  selectedTheme: _user1Theme,
-                  imagePath: _user1ImagePath,
-                  onThemeChanged: (theme) =>
-                      setState(() => _user1Theme = theme),
-                  onPickImage: () => _pickImage(1),
-                  onRemoveImage: () => _removeImage(1),
-                ),
-
-                const SizedBox(height: 16),
-
-                // User 2 Card
-                _buildUserCard(
-                  context: context,
-                  title: 'User 2',
-                  userNumber: 2,
-                  controller: _user2Controller,
-                  selectedTheme: _user2Theme,
-                  imagePath: _user2ImagePath,
-                  onThemeChanged: (theme) =>
-                      setState(() => _user2Theme = theme),
-                  onPickImage: () => _pickImage(2),
-                  onRemoveImage: () => _removeImage(2),
-                ),
+                // User Card
+                _buildUserCard(context),
 
                 const SizedBox(height: 24),
 
@@ -831,41 +598,14 @@ class _HomePageState extends State<HomePage> {
                           ),
                         )
                       : const Icon(Icons.sync_rounded),
-                  label: Text(_isUpdating ? 'Updating...' : 'Update Widget'),
+                  label: Text(
+                    _isUpdating ? 'Updating...' : 'Save & Update Widget',
+                  ),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Instructions
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Long-press your home screen → Widgets → AanTan',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
 
@@ -891,6 +631,8 @@ class _HomePageState extends State<HomePage> {
                     side: BorderSide(color: colorScheme.primary),
                   ),
                 ),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -899,17 +641,183 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildUserCard({
-    required BuildContext context,
-    required String title,
-    required int userNumber,
-    required TextEditingController controller,
-    required UserTheme selectedTheme,
-    required String? imagePath,
-    required ValueChanged<UserTheme> onThemeChanged,
-    required VoidCallback onPickImage,
-    required VoidCallback onRemoveImage,
-  }) {
+  Widget _buildWidgetPreview(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Get the correct theme and image for preview
+    final user1Theme = widget.userNumber == 1 ? _userTheme : _user1Theme;
+    final user2Theme = widget.userNumber == 2 ? _userTheme : _user2Theme;
+    final user1Image = widget.userNumber == 1
+        ? _userImagePath
+        : _user1ImagePath;
+    final user2Image = widget.userNumber == 2
+        ? _userImagePath
+        : _user2ImagePath;
+    final user1Text = widget.userNumber == 1
+        ? _textController.text.trim()
+        : _user1Text;
+    final user2Text = widget.userNumber == 2
+        ? _textController.text.trim()
+        : _user2Text;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Widget Preview',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Preview mimics the actual widget layout
+          SizedBox(
+            height: 180,
+            child: Row(
+              children: [
+                // User 1 (Tanmay) Preview
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 2),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: user1Theme.color,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Tanmay',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              image: user1Image != null
+                                  ? DecorationImage(
+                                      image: FileImage(File(user1Image)),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: user1Image == null
+                                ? Icon(
+                                    Icons.image_outlined,
+                                    color: Colors.white.withOpacity(0.5),
+                                    size: 40,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (user1Text.isNotEmpty)
+                          Text(
+                            user1Text,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                // User 2 (Aanchal) Preview
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 2),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: user2Theme.color,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Aanchal',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              image: user2Image != null
+                                  ? DecorationImage(
+                                      image: FileImage(File(user2Image)),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: user2Image == null
+                                ? Icon(
+                                    Icons.image_outlined,
+                                    color: Colors.white.withOpacity(0.5),
+                                    size: 40,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (user2Text.isNotEmpty)
+                          Text(
+                            user2Text,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -917,10 +825,7 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selectedTheme.color.withOpacity(0.3),
-          width: 2,
-        ),
+        border: Border.all(color: _userTheme.color.withOpacity(0.3), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -933,11 +838,11 @@ class _HomePageState extends State<HomePage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: selectedTheme.color,
+                  color: _userTheme.color,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  title,
+                  _userName,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -959,40 +864,40 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 8),
 
           GestureDetector(
-            onTap: onPickImage,
+            onTap: _pickImage,
             child: Container(
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: selectedTheme.color.withOpacity(0.3),
+                  color: _userTheme.color.withOpacity(0.3),
                   width: 2,
                 ),
-                image: imagePath != null
+                image: _userImagePath != null
                     ? DecorationImage(
-                        image: FileImage(File(imagePath)),
+                        image: FileImage(File(_userImagePath!)),
                         fit: BoxFit.cover,
                       )
                     : null,
-                color: imagePath == null
-                    ? selectedTheme.color.withOpacity(0.1)
+                color: _userImagePath == null
+                    ? _userTheme.color.withOpacity(0.1)
                     : null,
               ),
-              child: imagePath == null
+              child: _userImagePath == null
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.add_photo_alternate_rounded,
-                          color: selectedTheme.color,
+                          color: _userTheme.color,
                           size: 40,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Tap to add image',
                           style: TextStyle(
-                            color: selectedTheme.color,
+                            color: _userTheme.color,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1002,25 +907,25 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          if (imagePath != null) ...[
+          if (_userImagePath != null) ...[
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onPickImage,
+                    onPressed: _pickImage,
                     icon: const Icon(Icons.edit, size: 18),
                     label: const Text('Change'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: selectedTheme.color,
-                      side: BorderSide(color: selectedTheme.color),
+                      foregroundColor: _userTheme.color,
+                      side: BorderSide(color: _userTheme.color),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onRemoveImage,
+                    onPressed: _removeImage,
                     icon: const Icon(Icons.delete_outline, size: 18),
                     label: const Text('Remove'),
                     style: OutlinedButton.styleFrom(
@@ -1037,7 +942,7 @@ class _HomePageState extends State<HomePage> {
 
           // Text Input (optional)
           TextField(
-            controller: controller,
+            controller: _textController,
             decoration: InputDecoration(
               labelText: 'Caption (optional)',
               hintText: 'Add a message...',
@@ -1050,7 +955,7 @@ class _HomePageState extends State<HomePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: selectedTheme.color, width: 2),
+                borderSide: BorderSide(color: _userTheme.color, width: 2),
               ),
             ),
           ),
@@ -1069,9 +974,14 @@ class _HomePageState extends State<HomePage> {
             spacing: 8,
             runSpacing: 8,
             children: availableThemes.map((theme) {
-              final isSelected = theme.hexCode == selectedTheme.hexCode;
+              final isSelected = theme.hexCode == _userTheme.hexCode;
               return GestureDetector(
-                onTap: () => onThemeChanged(theme),
+                onTap: () {
+                  setState(() {
+                    _userTheme = theme;
+                    _syncUserData();
+                  });
+                },
                 child: Container(
                   width: 40,
                   height: 40,

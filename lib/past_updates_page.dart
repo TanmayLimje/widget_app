@@ -1,25 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-
-/// Model class for an update entry
-class UpdateEntry {
-  final String userId;
-  final String userName;
-  final String? text;
-  final String? imagePath;
-  final Color color;
-  final DateTime timestamp;
-
-  const UpdateEntry({
-    required this.userId,
-    required this.userName,
-    this.text,
-    this.imagePath,
-    required this.color,
-    required this.timestamp,
-  });
-}
+import 'update_history_service.dart';
 
 class PastUpdatesPage extends StatefulWidget {
   const PastUpdatesPage({super.key});
@@ -29,7 +10,7 @@ class PastUpdatesPage extends StatefulWidget {
 }
 
 class _PastUpdatesPageState extends State<PastUpdatesPage> {
-  List<UpdateEntry> _updates = [];
+  List<UserUpdate> _updates = [];
   bool _isLoading = true;
 
   @override
@@ -39,59 +20,17 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
   }
 
   Future<void> _loadPastUpdates() async {
+    setState(() => _isLoading = true);
+
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final files = appDir.listSync();
-
-      final List<UpdateEntry> updates = [];
-
-      // Find all update images and create entries
-      for (final file in files) {
-        if (file is File && file.path.contains('_update_')) {
-          final fileName = file.path.split(Platform.pathSeparator).last;
-
-          // Parse filename: user1_update_timestamp.jpg or user2_update_timestamp.jpg
-          final isUser1 = fileName.startsWith('user1');
-          final isUser2 = fileName.startsWith('user2');
-
-          if (isUser1 || isUser2) {
-            // Extract timestamp from filename
-            final timestampMatch = RegExp(
-              r'_update_(\d+)',
-            ).firstMatch(fileName);
-            final timestamp = timestampMatch != null
-                ? DateTime.fromMillisecondsSinceEpoch(
-                    int.parse(timestampMatch.group(1)!),
-                  )
-                : DateTime.now();
-
-            updates.add(
-              UpdateEntry(
-                userId: isUser1 ? 'user1' : 'user2',
-                userName: isUser1 ? 'User 1' : 'User 2',
-                imagePath: file.path,
-                color: isUser1
-                    ? const Color(0xFF6366F1) // Purple for User 1
-                    : const Color(0xFF3B82F6), // Blue for User 2
-                timestamp: timestamp,
-              ),
-            );
-          }
-        }
-      }
-
-      // Sort by timestamp (newest first)
-      updates.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
+      final updates = await UpdateHistoryService.loadHistory();
       setState(() {
         _updates = updates;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error loading past updates: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -109,6 +48,47 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
       return '${difference.inDays}d ago';
     } else {
       return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  Future<void> _deleteUpdate(UserUpdate update) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Update'),
+        content: const Text(
+          'Are you sure you want to delete this update from history?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await UpdateHistoryService.deleteUpdate(update.id);
+      _loadPastUpdates();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Update deleted'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -171,10 +151,7 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                     ),
                     // Refresh button
                     IconButton(
-                      onPressed: () {
-                        setState(() => _isLoading = true);
-                        _loadPastUpdates();
-                      },
+                      onPressed: _loadPastUpdates,
                       icon: Icon(
                         Icons.refresh_rounded,
                         color: colorScheme.primary,
@@ -235,7 +212,7 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Updates you share will appear here.\nStart by adding an image update!',
+              'Updates you share will appear here.\nTap "Update Widget" to save your first update!',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface.withOpacity(0.6),
@@ -267,9 +244,15 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
 
   Widget _buildUpdateCard(
     BuildContext context,
-    UpdateEntry update,
+    UserUpdate update,
     ColorScheme colorScheme,
   ) {
+    final hasImage =
+        update.imagePath != null &&
+        update.imagePath!.isNotEmpty &&
+        File(update.imagePath!).existsSync();
+    final hasText = update.text != null && update.text!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -287,7 +270,7 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User header
+          // User header with timestamp
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -301,8 +284,8 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
               children: [
                 // Avatar
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
@@ -313,7 +296,7 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 18,
                       ),
                     ),
                   ),
@@ -329,9 +312,10 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: 16,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         _formatDate(update.timestamp),
                         style: TextStyle(
@@ -342,23 +326,18 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                     ],
                   ),
                 ),
-                // Status indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                // Delete button
+                IconButton(
+                  onPressed: () => _deleteUpdate(update),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white.withOpacity(0.8),
+                    size: 20,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Update',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(32, 32),
                   ),
                 ),
               ],
@@ -366,21 +345,23 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
           ),
 
           // Image content
-          if (update.imagePath != null && File(update.imagePath!).existsSync())
+          if (hasImage)
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(18),
-                bottomRight: Radius.circular(18),
-              ),
+              borderRadius: hasText
+                  ? BorderRadius.zero
+                  : const BorderRadius.only(
+                      bottomLeft: Radius.circular(18),
+                      bottomRight: Radius.circular(18),
+                    ),
               child: SizedBox(
                 width: double.infinity,
-                height: 200,
+                height: 220,
                 child: Image.file(
                   File(update.imagePath!),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      height: 200,
+                      height: 220,
                       color: update.color.withOpacity(0.1),
                       child: Center(
                         child: Icon(
@@ -395,25 +376,46 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
               ),
             ),
 
-          // Text content (if available)
-          if (update.text != null && update.text!.isNotEmpty)
+          // Text content
+          if (hasText)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: update.color.withOpacity(0.05),
-                borderRadius: update.imagePath == null
-                    ? const BorderRadius.only(
-                        bottomLeft: Radius.circular(18),
-                        bottomRight: Radius.circular(18),
-                      )
-                    : BorderRadius.zero,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
+                ),
               ),
               child: Text(
                 update.text!,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
+                ).textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface),
+              ),
+            ),
+
+          // Show placeholder if no content
+          if (!hasImage && !hasText)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: update.color.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  'Updated color theme',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.5),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
             ),
         ],

@@ -1,22 +1,26 @@
 # AanTan - Android Home Screen Widget App
 
-A Flutter application that creates a customizable dual-user Android home screen widget for sharing status updates with images and captions.
+A Flutter application that creates a customizable dual-user Android home screen widget for sharing status updates with images and captions between Tanmay and Aanchal.
 
 ## Features
 
-- 🎨 **Dual User Support** - Two independent sections for different users
-- 📸 **Image Updates** - Share photos via camera or gallery
+- 🔐 **User Login** - Login as Tanmay or Aanchal with dedicated screens
+- 🎨 **Dual User Support** - Two independent sections for Tanmay and Aanchal
+- 📸 **Image Updates** - Share photos via camera, gallery, or draw doodles
+- 🎨 **Drawing Canvas** - Create and share hand-drawn doodles
 - 🌈 **8 Color Themes** - Choose from Purple, Blue, Green, Orange, Pink, Red, Teal, or Yellow
 - 📝 **Optional Captions** - Add text messages to your updates
 - 📱 **Live Preview** - See widget appearance before adding to home screen
 - 💾 **Persistent Storage** - Settings and images saved between app launches
 - 👆 **Tap to Open** - Tap the widget to launch the app
+- 📜 **Update History** - View past updates from both users
+- 🌙 **Theme Mode** - Switch between Light, Dark, and System themes
 
 ## Widget Layout
 
 ```
 ┌─────────────────┬─────────────────┐
-│     User 1      │     User 2      │
+│     Tanmay      │     Aanchal     │
 ├─────────────────┼─────────────────┤
 │                 │                 │
 │  [UPDATE IMG]   │  [UPDATE IMG]   │
@@ -26,15 +30,27 @@ A Flutter application that creates a customizable dual-user Android home screen 
 └─────────────────┴─────────────────┘
 ```
 
+## App Flow
+
+1. **Login Screen** - Choose to login as Tanmay or Aanchal
+2. **User Home** - Personalized screen showing:
+   - Widget preview (both users' content)
+   - Your own update card (photo/draw/text)
+   - Save & Update Widget button
+   - View Past Updates button
+   - Theme switcher
+   - Logout to switch users
+
 ## Screenshots
 
 The app displays a clean Material 3 interface with:
-- Widget preview at the top showing how the home screen widget will look
-- Two user configuration cards with:
-  - Image picker (tap to add/change photo)
-  - Caption input field (optional)
+- Login page with two user buttons
+- User-specific home screen with:
+  - Widget preview at the top
+  - Single user configuration card with image picker and caption
   - Color theme picker
-- Update button to sync changes to the widget
+  - Update and history buttons
+  - Theme mode toggle
 
 ## Getting Started
 
@@ -59,20 +75,26 @@ The app displays a clean Material 3 interface with:
 ### Adding the Widget
 
 1. Open the AanTan app
-2. Add images for each user (tap the image area)
-3. Optionally add captions
-4. Choose background colors
-5. Tap "Update Widget"
-6. Long-press your Android home screen
-7. Select "Widgets"
-8. Find and drag "AanTan" (4×3 size) to your home screen
+2. Login as Tanmay or Aanchal
+3. Add an image (camera, gallery, or draw)
+4. Optionally add a caption
+5. Choose a background color
+6. Tap "Save & Update Widget"
+7. Long-press your Android home screen
+8. Select "Widgets"
+9. Find and drag "AanTan" (4×3 size) to your home screen
 
 ## Project Structure
 
 ```
 widget_app/
 ├── lib/
-│   └── main.dart                    # Flutter app with dual user UI
+│   ├── main.dart                    # App entry, theme, routes
+│   ├── login_page.dart              # User login screen
+│   ├── user_home_page.dart          # User-specific home page
+│   ├── past_updates_page.dart       # Update history viewer
+│   ├── drawing_canvas_page.dart     # Doodle drawing canvas
+│   └── update_history_service.dart  # History persistence
 ├── android/
 │   └── app/src/main/
 │       ├── kotlin/.../
@@ -103,6 +125,14 @@ widget_app/
 - `home_widget: ^0.7.0` - Flutter-to-native widget communication
 - `image_picker: ^1.0.7` - Camera and gallery access
 - `path_provider: ^2.1.2` - Local file storage
+- `shared_preferences` - Theme and settings persistence
+
+## User Mapping
+
+| User | Name    | Default Color |
+|------|---------|---------------|
+| 1    | Tanmay  | Purple        |
+| 2    | Aanchal | Blue          |
 
 ## License
 
