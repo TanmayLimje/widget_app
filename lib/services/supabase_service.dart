@@ -195,6 +195,27 @@ class SupabaseService {
     }
   }
 
+  /// Fetch all past updates from Supabase for history page
+  static Future<List<Map<String, dynamic>>> fetchAllUpdates() async {
+    if (!isConfigured || _client == null) {
+      debugPrint('Supabase not configured, returning empty list');
+      return [];
+    }
+
+    try {
+      final data = await _client!
+          .from('updates')
+          .select()
+          .order('updated_at', ascending: false);
+
+      debugPrint('Fetched ${data.length} updates from Supabase');
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      debugPrint('Failed to fetch all updates: $e');
+      return [];
+    }
+  }
+
   /// Delete an update from Supabase
   static Future<void> deleteUpdate(String id) async {
     if (!isConfigured || _client == null) return;

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'update_history_service.dart';
+import 'services/supabase_service.dart';
 
 class PastUpdatesPage extends StatefulWidget {
   const PastUpdatesPage({super.key});
@@ -23,9 +24,53 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
     setState(() => _isLoading = true);
 
     try {
-      final updates = await UpdateHistoryService.loadHistory();
+      // Load local history first
+      final localUpdates = await UpdateHistoryService.loadHistory();
+
+      // Fetch from Supabase
+      final remoteUpdates = await SupabaseService.fetchAllUpdates();
+
+      // Convert remote updates to UserUpdate objects and merge with local
+      final Map<String, UserUpdate> allUpdates = {};
+
+      // Add local updates to map
+      for (final update in localUpdates) {
+        allUpdates[update.id] = update;
+      }
+
+      // Add/update with remote updates
+      for (final remote in remoteUpdates) {
+        final id = remote['id'] as String;
+        final imageUrl = remote['image_url'] as String?;
+        String? localImagePath;
+
+        // Check if we already have this update locally with an image
+        if (allUpdates.containsKey(id) && allUpdates[id]!.imagePath != null) {
+          localImagePath = allUpdates[id]!.imagePath;
+        } else if (imageUrl != null && imageUrl.isNotEmpty) {
+          // Download image from Supabase if not cached locally
+          localImagePath = await SupabaseService.downloadImage(imageUrl, id);
+        }
+
+        final update = UserUpdate(
+          id: id,
+          timestamp: DateTime.parse(remote['updated_at'] as String),
+          userId: remote['user_id'] as String,
+          userName: remote['user_name'] as String,
+          text: remote['text'] as String?,
+          imagePath: localImagePath,
+          colorHex: remote['color_hex'] as String,
+        );
+
+        allUpdates[id] = update;
+      }
+
+      // Convert to list and sort by timestamp (newest first)
+      final mergedList = allUpdates.values.toList()
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
       setState(() {
-        _updates = updates;
+        _updates = mergedList;
         _isLoading = false;
       });
     } catch (e) {

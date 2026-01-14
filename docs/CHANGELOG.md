@@ -2,6 +2,49 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.3.0] - 2026-01-15
+
+### Added
+
+#### Canvas Elements - Emoji & Text Support
+- **Mode Switcher** - Top toolbar with three modes:
+  - **Draw** - Freehand drawing (existing)
+  - **Emoji** - Place and transform emojis
+  - **Text** - Add styled text elements
+
+- **Emoji Elements**
+  - Emoji picker with 48 popular emojis (smileys, hearts, gestures)
+  - Tap to place emoji at canvas center
+  - Select emoji to show transform handles
+  - Two-finger pinch to resize
+  - Two-finger rotate to spin
+  - Drag to move anywhere on canvas
+
+- **Text Elements**
+  - Text editor dialog with full customization
+  - Font family selection (Roboto, serif, monospace, cursive, sans-serif)
+  - Font size slider (12-72)
+  - Text color palette (8 colors)
+  - Optional background color
+  - Optional border
+  - Tap text to select, tap again to edit
+  - Same transform gestures as emoji
+
+- **Element Management**
+  - Delete button (red) appears when element selected
+  - Undo removes selected element, or last stroke/element
+  - Clear All removes everything with confirmation
+  - Elements saved as part of the canvas image
+
+### Technical Details
+
+- New files:
+  - `lib/models/canvas_element.dart` - Data models for `CanvasElement`, `EmojiElement`, `TextElement`
+- Modified files:
+  - `lib/drawing_canvas_page.dart` - Complete rewrite with element support, mode switcher, gesture handling
+
+---
+
 ## [3.2.0] - 2026-01-15
 
 ### Fixed
@@ -207,6 +250,7 @@ All notable changes to the AanTan project are documented in this file.
 - [x] ~~Image sharing support~~ ✅ Added in v2.0.0
 - [x] ~~Larger widget size (4×3)~~ ✅ Added in v2.0.0
 - [x] ~~Supabase real-time sync~~ ✅ Added in v3.1.0
+- [x] ~~Canvas emoji & text elements~~ ✅ Added in v3.3.0
 - [ ] Multiple widget sizes (2×2, 4×4)
 - [ ] Custom username labels
 - [ ] Gradient backgrounds
