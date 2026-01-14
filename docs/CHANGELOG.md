@@ -2,6 +2,36 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.2.0] - 2026-01-15
+
+### Fixed
+
+#### Image Resolution Consistency
+- **Square Canvas** - Drawing canvas now uses `AspectRatio(1.0)` to ensure all drawings are saved as square images
+- **Consistent Display** - All image displays now use the same aspect ratio throughout the app:
+  - Widget preview (Flutter app)
+  - Update Image section
+  - Past Updates history page
+  - Android home screen widget
+
+- **No More Stretching** - Changed Android widget `scaleType` from `centerCrop` to `fitCenter` so images maintain aspect ratio when widget is resized
+
+### Changed
+
+- Widget preview height increased from 180dp to 240dp to accommodate square images + text
+- Image containers now use `BoxFit.cover` with square `AspectRatio(1.0)` wrappers
+- History page images use square `AspectRatio(1.0)` instead of fixed height
+
+### Technical Details
+
+- Modified `drawing_canvas_page.dart` - Canvas wrapped in `AspectRatio(1.0)`
+- Modified `user_home_page.dart` - Widget preview image containers use `AspectRatio(1.0)`
+- Modified `main.dart` - HomePage widget preview image containers use `AspectRatio(1.0)`
+- Modified `past_updates_page.dart` - History images use `AspectRatio(1.0)`
+- Modified `aantan_widget.xml` - Changed `android:scaleType="fitCenter"`
+
+---
+
 ## [3.1.0] - 2026-01-15
 
 ### Added

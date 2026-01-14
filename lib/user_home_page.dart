@@ -68,10 +68,7 @@ class _UserHomePageState extends State<UserHomePage> {
       // Load User 1 data
       if (savedUser1Text != null) {
         _user1Text = savedUser1Text;
-        if (widget.userNumber == 1) {
-          _userText = savedUser1Text;
-          _textController.text = savedUser1Text;
-        }
+        // Don't load into _userText - user starts fresh each time
       }
       if (savedUser1Color != null) {
         _user1Theme = availableThemes.firstWhere(
@@ -84,18 +81,13 @@ class _UserHomePageState extends State<UserHomePage> {
       }
       if (savedUser1Image != null && File(savedUser1Image).existsSync()) {
         _user1ImagePath = savedUser1Image;
-        if (widget.userNumber == 1) {
-          _userImagePath = savedUser1Image;
-        }
+        // Don't load into _userImagePath - user starts fresh each time
       }
 
       // Load User 2 data
       if (savedUser2Text != null) {
         _user2Text = savedUser2Text;
-        if (widget.userNumber == 2) {
-          _userText = savedUser2Text;
-          _textController.text = savedUser2Text;
-        }
+        // Don't load into _userText - user starts fresh each time
       }
       if (savedUser2Color != null) {
         _user2Theme = availableThemes.firstWhere(
@@ -108,9 +100,7 @@ class _UserHomePageState extends State<UserHomePage> {
       }
       if (savedUser2Image != null && File(savedUser2Image).existsSync()) {
         _user2ImagePath = savedUser2Image;
-        if (widget.userNumber == 2) {
-          _userImagePath = savedUser2Image;
-        }
+        // Don't load into _userImagePath - user starts fresh each time
       }
     });
   }
@@ -186,6 +176,8 @@ class _UserHomePageState extends State<UserHomePage> {
   void _removeImage() {
     setState(() {
       _userImagePath = null;
+      _userText = '';
+      _textController.clear();
       _syncUserData();
     });
   }
@@ -288,9 +280,15 @@ class _UserHomePageState extends State<UserHomePage> {
     try {
       final userText = _textController.text.trim();
 
-      // Update local state
+      // Update saved data for widget preview
       setState(() {
-        _userText = userText;
+        if (widget.userNumber == 1) {
+          _user1Text = userText;
+          _user1ImagePath = _userImagePath;
+        } else {
+          _user2Text = userText;
+          _user2ImagePath = _userImagePath;
+        }
         _syncUserData();
       });
 
@@ -344,6 +342,13 @@ class _UserHomePageState extends State<UserHomePage> {
             ? _userTheme.hexCode
             : _user2Theme.hexCode,
       );
+
+      // Reset form to show "Add New" again
+      setState(() {
+        _userImagePath = null;
+        _userText = '';
+        _textController.clear();
+      });
 
       _showSnackBar('Widget updated successfully!');
     } catch (e) {
@@ -585,29 +590,30 @@ class _UserHomePageState extends State<UserHomePage> {
 
                 const SizedBox(height: 24),
 
-                // Update Button
-                FilledButton.icon(
-                  onPressed: _isUpdating ? null : _updateWidget,
-                  icon: _isUpdating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.sync_rounded),
-                  label: Text(
-                    _isUpdating ? 'Updating...' : 'Save & Update Widget',
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                // Update Button - only show when there's an image to save
+                if (_userImagePath != null)
+                  FilledButton.icon(
+                    onPressed: _isUpdating ? null : _updateWidget,
+                    icon: _isUpdating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.sync_rounded),
+                    label: Text(
+                      _isUpdating ? 'Updating...' : 'Save & Update Widget',
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
-                ),
 
                 const SizedBox(height: 16),
 
@@ -644,21 +650,14 @@ class _UserHomePageState extends State<UserHomePage> {
   Widget _buildWidgetPreview(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Get the correct theme and image for preview
+    // Get the correct theme and image for preview - always use SAVED data
     final user1Theme = widget.userNumber == 1 ? _userTheme : _user1Theme;
     final user2Theme = widget.userNumber == 2 ? _userTheme : _user2Theme;
-    final user1Image = widget.userNumber == 1
-        ? _userImagePath
-        : _user1ImagePath;
-    final user2Image = widget.userNumber == 2
-        ? _userImagePath
-        : _user2ImagePath;
-    final user1Text = widget.userNumber == 1
-        ? _textController.text.trim()
-        : _user1Text;
-    final user2Text = widget.userNumber == 2
-        ? _textController.text.trim()
-        : _user2Text;
+    // Preview always shows the SAVED widget data, not the form being edited
+    final user1Image = _user1ImagePath;
+    final user2Image = _user2ImagePath;
+    final user1Text = _user1Text;
+    final user2Text = _user2Text;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -869,9 +868,9 @@ class _UserHomePageState extends State<UserHomePage> {
           ),
           const SizedBox(height: 8),
 
-          GestureDetector(
-            onTap: _pickImage,
-            child: Container(
+          // Show image preview if exists, otherwise show Add New button
+          if (_userImagePath != null) ...[
+            Container(
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
@@ -880,42 +879,18 @@ class _UserHomePageState extends State<UserHomePage> {
                   color: _userTheme.color.withOpacity(0.3),
                   width: 2,
                 ),
-                color: _userImagePath != null
-                    ? Colors.black.withOpacity(0.3)
-                    : _userTheme.color.withOpacity(0.1),
+                color: Colors.black.withOpacity(0.3),
               ),
-              child: _userImagePath != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.file(
-                        File(_userImagePath!),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate_rounded,
-                          color: _userTheme.color,
-                          size: 40,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap to add image',
-                          style: TextStyle(
-                            color: _userTheme.color,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.file(
+                  File(_userImagePath!),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
             ),
-          ),
-
-          if (_userImagePath != null) ...[
             const SizedBox(height: 8),
             Row(
               children: [
@@ -944,29 +919,65 @@ class _UserHomePageState extends State<UserHomePage> {
                 ),
               ],
             ),
-          ],
+            const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-
-          // Text Input (optional)
-          TextField(
-            controller: _textController,
-            decoration: InputDecoration(
-              labelText: 'Caption (optional)',
-              hintText: 'Add a message...',
-              prefixIcon: const Icon(Icons.message_rounded),
-              filled: true,
-              fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _userTheme.color, width: 2),
+            // Text Input (optional) - only shown after image is added
+            TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                labelText: 'Caption (optional)',
+                hintText: 'Add a message...',
+                prefixIcon: const Icon(Icons.message_rounded),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: _userTheme.color, width: 2),
+                ),
               ),
             ),
-          ),
+          ] else ...[
+            // Add New card when no image exists
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _userTheme.color.withOpacity(0.5),
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignInside,
+                  ),
+                  color: _userTheme.color.withOpacity(0.1),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_photo_alternate_rounded,
+                      color: _userTheme.color,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Tap to add new update',
+                      style: TextStyle(
+                        color: _userTheme.color,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 16),
 
