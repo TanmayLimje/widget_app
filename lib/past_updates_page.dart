@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'update_history_service.dart';
 import 'services/supabase_service.dart';
 
@@ -128,6 +129,76 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
           SnackBar(
             content: const Text('Update deleted'),
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveImageToGallery(UserUpdate update) async {
+    if (update.imagePath == null || update.imagePath!.isEmpty) return;
+
+    final file = File(update.imagePath!);
+    if (!file.existsSync()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image not found'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      // Save to gallery using Gal package
+      await Gal.putImage(update.imagePath!, album: 'AanTan');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Text('Saved to gallery'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green.shade600,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to save image: $e');
+      if (mounted) {
+        // Check if it's a permission issue
+        final hasAccess = await Gal.hasAccess(toAlbum: true);
+        if (!hasAccess) {
+          final granted = await Gal.requestAccess(toAlbum: true);
+          if (granted) {
+            // Retry after permission granted
+            _saveImageToGallery(update);
+            return;
+          }
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save image: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -371,6 +442,23 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                     ],
                   ),
                 ),
+                // Save to gallery button (only show if image exists)
+                if (hasImage)
+                  IconButton(
+                    onPressed: () => _saveImageToGallery(update),
+                    icon: Icon(
+                      Icons.download_rounded,
+                      color: Colors.white.withOpacity(0.8),
+                      size: 20,
+                    ),
+                    tooltip: 'Save to gallery',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                if (hasImage) const SizedBox(width: 8),
                 // Delete button
                 IconButton(
                   onPressed: () => _deleteUpdate(update),

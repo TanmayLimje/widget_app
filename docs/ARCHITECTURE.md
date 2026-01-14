@@ -10,12 +10,18 @@ AanTan is a Flutter application that demonstrates how to create Android home scr
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Flutter App                               │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                      main.dart                               │ │
-│  │  • User Interface (Material 3)                               │ │
-│  │  • Image picker (camera/gallery)                             │ │
-│  │  • Text input fields for captions                            │ │
-│  │  • Color picker with 8 theme options                         │ │
-│  │  • Widget preview with live updates                          │ │
+│  │                  UI Pages Layer                               │ │
+│  │  • LoginPage - User selection (Tanmay/Aanchal)                │ │
+│  │  • UserHomePage - User-specific controls + widget preview     │ │
+│  │  • DrawingCanvasPage - Canvas with draw/emoji/text modes     │ │
+│  │  • PastUpdatesPage - History viewer with cloud sync          │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │                    Services Layer                            │ │
+│  │  • SupabaseService - Cloud database + real-time + storage    │ │
+│  │  • UpdateHistoryService - Local + cloud history persistence  │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                              │                                    │
 │                              ▼                                    │
@@ -34,7 +40,7 @@ AanTan is a Flutter application that demonstrates how to create Android home scr
 │  └─────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                                │
-                               │ SharedPreferences + File System
+                               │ SharedPreferences + File System + Supabase
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Android Native Layer                         │
@@ -106,15 +112,45 @@ AanTan is a Flutter application that demonstrates how to create Android home scr
 
 ### Flutter Layer
 
-| Component | Purpose |
-|-----------|---------|
-| `AanTanApp` | Root widget with Material 3 theming |
-| `HomePage` | Main UI with user cards and preview |
-| `UserTheme` | Data class for color options |
-| `_buildUserCard()` | Reusable widget for user configuration |
-| `_pickImage()` | Image picker with camera/gallery options |
-| `_saveImageLocally()` | Saves captured images to documents dir |
-| `_buildImageSourceSheet()` | Bottom sheet for image source selection |
+#### Pages
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `LoginPage` | `login_page.dart` | User selection screen (Tanmay/Aanchal) |
+| `UserHomePage` | `user_home_page.dart` | Main user interface with widget preview, update card, real-time sync |
+| `HomePage` | `home_page.dart` | Legacy dual-user home page |
+| `DrawingCanvasPage` | `drawing_canvas_page.dart` | Canvas with Draw/Emoji/Text modes |
+| `PastUpdatesPage` | `past_updates_page.dart` | History viewer with Supabase sync + gallery save |
+
+#### Services
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `SupabaseService` | `services/supabase_service.dart` | Cloud database, real-time subscriptions, image storage |
+| `UpdateHistoryService` | `update_history_service.dart` | Local JSON persistence, change detection, cloud sync integration |
+
+#### Models
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `UserTheme` | `main.dart` | Data class for color theme options |
+| `UserUpdate` | `update_history_service.dart` | Data class for update entries |
+| `CanvasElement` | `models/canvas_element.dart` | Abstract base for canvas elements |
+| `EmojiElement` | `models/canvas_element.dart` | Emoji with position, scale, rotation |
+| `TextElement` | `models/canvas_element.dart` | Styled text with font, color, background |
+| `DrawingStroke` | `drawing_canvas_page.dart` | Freehand drawing stroke data |
+
+#### Key Functions
+
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `_updateWidget()` | UserHomePage | Save data to SharedPreferences + trigger widget refresh |
+| `_subscribeToRealtimeUpdates()` | UserHomePage | Listen for partner's updates via Supabase |
+| `_syncUserData()` | UserHomePage | Fetch partner's latest data from cloud |
+| `_pickImage()` | UserHomePage | Camera/gallery/draw image selection |
+| `_saveDrawing()` | DrawingCanvasPage | Export canvas as square PNG |
+| `saveUserUpdate()` | UpdateHistoryService | Save update with change detection |
+| `syncUpdate()` | SupabaseService | Upload update + image to cloud |
 
 ### Android Layer
 

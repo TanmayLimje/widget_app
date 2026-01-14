@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
@@ -8,6 +9,7 @@ import 'drawing_canvas_page.dart';
 import 'update_history_service.dart';
 import 'past_updates_page.dart';
 import 'main.dart'; // For themeModeNotifier and availableThemes
+import 'services/supabase_service.dart'; // For real-time sync
 
 /// User-specific home page that shows only the logged-in user's controls
 class UserHomePage extends StatefulWidget {
@@ -37,12 +39,16 @@ class _UserHomePageState extends State<UserHomePage> {
 
   bool _isUpdating = false;
 
+  // Real-time sync subscription
+  StreamSubscription<List<Map<String, dynamic>>>? _realtimeSubscription;
+
   String get _userName => widget.userNumber == 1 ? 'Tanmay' : 'Aanchal';
 
   @override
   void initState() {
     super.initState();
     _initHomeWidget();
+    _subscribeToRealtimeUpdates();
   }
 
   Future<void> _initHomeWidget() async {
@@ -321,26 +327,12 @@ class _UserHomePageState extends State<UserHomePage> {
         iOSName: 'AanTanWidget',
       );
 
-      // Save to update history
-      await UpdateHistoryService.saveUpdate(
-        user1Text: widget.userNumber == 1
-            ? (userText.isNotEmpty ? userText : null)
-            : (_user1Text.isNotEmpty ? _user1Text : null),
-        user1ImagePath: widget.userNumber == 1
-            ? _userImagePath
-            : _user1ImagePath,
-        user1ColorHex: widget.userNumber == 1
-            ? _userTheme.hexCode
-            : _user1Theme.hexCode,
-        user2Text: widget.userNumber == 2
-            ? (userText.isNotEmpty ? userText : null)
-            : (_user2Text.isNotEmpty ? _user2Text : null),
-        user2ImagePath: widget.userNumber == 2
-            ? _userImagePath
-            : _user2ImagePath,
-        user2ColorHex: widget.userNumber == 2
-            ? _userTheme.hexCode
-            : _user2Theme.hexCode,
+      // Save to update history (only saves THIS user's update)
+      await UpdateHistoryService.saveUserUpdate(
+        userNumber: widget.userNumber,
+        text: userText.isNotEmpty ? userText : null,
+        imagePath: _userImagePath,
+        colorHex: _userTheme.hexCode,
       );
 
       // Reset form to show "Add New" again
@@ -506,7 +498,113 @@ class _UserHomePageState extends State<UserHomePage> {
   @override
   void dispose() {
     _textController.dispose();
+    _realtimeSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Subscribe to real-time updates from Supabase
+  /// When the other user updates, this will refresh the home screen widget
+  void _subscribeToRealtimeUpdates() {
+    _realtimeSubscription = SupabaseService.streamUpdates().listen((
+      updates,
+    ) async {
+      if (updates.isEmpty) return;
+
+      debugPrint('Received ${updates.length} real-time updates');
+
+      // Find updates from the OTHER user (not the current logged-in user)
+      // Note: Supabase stores 'tanmay' or 'aanchal' as user_id
+      final otherUserId = widget.userNumber == 1 ? 'aanchal' : 'tanmay';
+
+      // Get the latest update from the other user
+      final otherUserUpdate = updates.firstWhere(
+        (update) => update['user_id'] == otherUserId,
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (otherUserUpdate.isEmpty) return;
+
+      debugPrint('Found update from $otherUserId');
+
+      // Download image if exists
+      String? localImagePath;
+      final imageUrl = otherUserUpdate['image_url'] as String?;
+      final updateId = otherUserUpdate['id'] as String;
+
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        localImagePath = await SupabaseService.downloadImage(
+          imageUrl,
+          updateId,
+        );
+      }
+
+      // Get other update data
+      final text = otherUserUpdate['text'] as String? ?? '';
+      final colorHex = otherUserUpdate['color_hex'] as String? ?? 'FF6366F1';
+
+      // Update local state
+      setState(() {
+        if (widget.userNumber == 1) {
+          // Current user is Tanmay, update Aanchal's data
+          _user2Text = text;
+          _user2ImagePath = localImagePath;
+          _user2Theme = availableThemes.firstWhere(
+            (t) => t.hexCode == colorHex,
+            orElse: () => availableThemes[1],
+          );
+        } else {
+          // Current user is Aanchal, update Tanmay's data
+          _user1Text = text;
+          _user1ImagePath = localImagePath;
+          _user1Theme = availableThemes.firstWhere(
+            (t) => t.hexCode == colorHex,
+            orElse: () => availableThemes[0],
+          );
+        }
+      });
+
+      // Save to HomeWidget storage
+      if (widget.userNumber == 1) {
+        // Update User 2 (Aanchal) data in widget
+        await HomeWidget.saveWidgetData<String>('user2_text', text);
+        await HomeWidget.saveWidgetData<String>('user2_color', colorHex);
+        await HomeWidget.saveWidgetData<String>(
+          'user2_image',
+          localImagePath ?? '',
+        );
+      } else {
+        // Update User 1 (Tanmay) data in widget
+        await HomeWidget.saveWidgetData<String>('user1_text', text);
+        await HomeWidget.saveWidgetData<String>('user1_color', colorHex);
+        await HomeWidget.saveWidgetData<String>(
+          'user1_image',
+          localImagePath ?? '',
+        );
+      }
+
+      // Refresh the home screen widget
+      await HomeWidget.updateWidget(
+        androidName: 'AanTanWidgetProvider',
+        iOSName: 'AanTanWidget',
+      );
+
+      // Persist received update to lastState (prevents re-saving as duplicate)
+      final otherUserNumber = widget.userNumber == 1 ? 2 : 1;
+      await UpdateHistoryService.saveReceivedUpdate(
+        otherUserNumber: otherUserNumber,
+        text: text.isNotEmpty ? text : null,
+        imagePath: localImagePath,
+        colorHex: colorHex,
+      );
+
+      debugPrint('Home screen widget refreshed with update from $otherUserId');
+
+      // Show notification to user
+      if (mounted) {
+        final otherUserName = widget.userNumber == 1 ? 'Aanchal' : 'Tanmay';
+        _showSnackBar('$otherUserName just updated! 💕');
+      }
+    });
   }
 
   @override

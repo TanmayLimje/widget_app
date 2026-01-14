@@ -323,6 +323,128 @@ class UpdateHistoryService {
     }
   }
 
+  /// Save only the current user's update (prevents duplicate saves)
+  /// This should be used instead of saveUpdate() when only one user is updating
+  static Future<void> saveUserUpdate({
+    required int userNumber, // 1 for Tanmay, 2 for Aanchal
+    required String? text,
+    required String? imagePath,
+    required String colorHex,
+  }) async {
+    try {
+      // Only save if there's actual content
+      if (imagePath?.isNotEmpty != true && text?.isNotEmpty != true) {
+        debugPrint('No content to save, skipping');
+        return;
+      }
+
+      final history = await loadHistory();
+      final now = DateTime.now();
+
+      final userId = userNumber == 1 ? 'user1' : 'user2';
+      final userName = userNumber == 1 ? 'Tanmay' : 'Aanchal';
+      final supabaseUserId = userNumber == 1 ? 'tanmay' : 'aanchal';
+      final updateId = '${now.millisecondsSinceEpoch}_$supabaseUserId';
+
+      // Add to history
+      history.insert(
+        0,
+        UserUpdate(
+          id: updateId,
+          timestamp: now,
+          userId: userId,
+          userName: userName,
+          text: text,
+          imagePath: imagePath,
+          colorHex: colorHex,
+        ),
+      );
+
+      // Sync to Supabase
+      await SupabaseService.syncUpdate(
+        id: updateId,
+        userId: supabaseUserId,
+        userName: userName,
+        text: text,
+        localImagePath: imagePath,
+        colorHex: colorHex,
+      );
+
+      // Keep only last 100 updates
+      final trimmedHistory = history.take(100).toList();
+
+      // Save history
+      final file = await _getHistoryFile();
+      final jsonString = json.encode(
+        trimmedHistory.map((u) => u.toJson()).toList(),
+      );
+      await file.writeAsString(jsonString);
+
+      // Update only the current user's state in lastState
+      await _updateUserLastState(
+        userNumber: userNumber,
+        text: text,
+        imagePath: imagePath,
+        colorHex: colorHex,
+      );
+
+      debugPrint('Saved update for $userName: $updateId');
+    } catch (e) {
+      debugPrint('Error saving user update to history: $e');
+    }
+  }
+
+  /// Update only one user's state in lastState file
+  static Future<void> _updateUserLastState({
+    required int userNumber,
+    required String? text,
+    required String? imagePath,
+    required String colorHex,
+  }) async {
+    try {
+      final file = await _getLastStateFile();
+      Map<String, dynamic> json = {};
+
+      // Load existing state
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        json = jsonDecode(contents) as Map<String, dynamic>;
+      }
+
+      // Update only the specified user
+      if (userNumber == 1) {
+        json['user1_text'] = text;
+        json['user1_image'] = imagePath;
+        json['user1_color'] = colorHex;
+      } else {
+        json['user2_text'] = text;
+        json['user2_image'] = imagePath;
+        json['user2_color'] = colorHex;
+      }
+
+      await file.writeAsString(jsonEncode(json));
+    } catch (e) {
+      debugPrint('Error updating user last state: $e');
+    }
+  }
+
+  /// Save a received real-time update to lastState (prevents re-saving)
+  /// Call this when receiving an update from the other user via real-time sync
+  static Future<void> saveReceivedUpdate({
+    required int otherUserNumber, // The OTHER user's number (1 or 2)
+    required String? text,
+    required String? imagePath,
+    required String colorHex,
+  }) async {
+    await _updateUserLastState(
+      userNumber: otherUserNumber,
+      text: text,
+      imagePath: imagePath,
+      colorHex: colorHex,
+    );
+    debugPrint('Saved received update for user $otherUserNumber to lastState');
+  }
+
   /// Delete a specific update from history
   static Future<void> deleteUpdate(String id) async {
     try {

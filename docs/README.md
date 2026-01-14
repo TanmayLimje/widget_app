@@ -4,17 +4,34 @@ A Flutter application that creates a customizable dual-user Android home screen 
 
 ## Features
 
+### Core Features
 - 🔐 **User Login** - Login as Tanmay or Aanchal with dedicated screens
 - 🎨 **Dual User Support** - Two independent sections for Tanmay and Aanchal
 - 📸 **Image Updates** - Share photos via camera, gallery, or draw doodles
-- 🎨 **Drawing Canvas** - Create and share hand-drawn doodles
 - 🌈 **8 Color Themes** - Choose from Purple, Blue, Green, Orange, Pink, Red, Teal, or Yellow
 - 📝 **Optional Captions** - Add text messages to your updates
 - 📱 **Live Preview** - See widget appearance before adding to home screen
-- 💾 **Persistent Storage** - Settings and images saved between app launches
 - 👆 **Tap to Open** - Tap the widget to launch the app
-- 📜 **Update History** - View past updates from both users
 - 🌙 **Theme Mode** - Switch between Light, Dark, and System themes
+
+### Drawing Canvas
+- 🖌️ **Freehand Drawing** - Draw with customizable brush sizes (Fine, Medium, Bold)
+- 🎨 **Canvas Backgrounds** - 7 background color options
+- 😀 **Emoji Elements** - Place 48 popular emojis on canvas with transform support
+- ✍️ **Text Elements** - Add styled text with font family, size, color, and background options
+- 🔄 **Transform Gestures** - Pinch to resize, rotate, and drag to move elements
+- ↩️ **Undo/Delete/Clear** - Full canvas editing controls
+
+### Cloud Sync (Supabase)
+- ☁️ **Real-Time Sync** - Updates sync between Tanmay and Aanchal's devices instantly
+- 📜 **Past Updates History** - View all past updates synced from cloud
+- 🖼️ **Image Storage** - Images uploaded to Supabase Storage
+- 🔔 **Live Notifications** - Widget refreshes when partner updates
+
+### Persistence
+- 💾 **Local Storage** - All updates saved locally with JSON persistence
+- 🔄 **Change Detection** - Only syncs when actual changes are made
+- 📁 **Image Gallery** - Save update images to device gallery
 
 ## Widget Layout
 
@@ -89,12 +106,17 @@ The app displays a clean Material 3 interface with:
 ```
 widget_app/
 ├── lib/
-│   ├── main.dart                    # App entry, theme, routes
+│   ├── main.dart                    # App entry, theme, routes, UserTheme
 │   ├── login_page.dart              # User login screen
-│   ├── user_home_page.dart          # User-specific home page
-│   ├── past_updates_page.dart       # Update history viewer
-│   ├── drawing_canvas_page.dart     # Doodle drawing canvas
-│   └── update_history_service.dart  # History persistence
+│   ├── home_page.dart               # Original dual-user home page (legacy)
+│   ├── user_home_page.dart          # User-specific home page with real-time sync
+│   ├── past_updates_page.dart       # Update history with Supabase sync
+│   ├── drawing_canvas_page.dart     # Drawing canvas with emoji/text elements
+│   ├── update_history_service.dart  # Local + cloud history persistence
+│   ├── models/
+│   │   └── canvas_element.dart      # CanvasElement, EmojiElement, TextElement
+│   └── services/
+│       └── supabase_service.dart    # Supabase client, real-time, storage
 ├── android/
 │   └── app/src/main/
 │       ├── kotlin/.../
@@ -126,6 +148,8 @@ widget_app/
 - `image_picker: ^1.0.7` - Camera and gallery access
 - `path_provider: ^2.1.2` - Local file storage
 - `shared_preferences` - Theme and settings persistence
+- `supabase_flutter: ^2.3.0` - Cloud database and real-time sync
+- `gal` - Save images to device gallery
 
 ## User Mapping
 

@@ -2,6 +2,41 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.4.0] - 2026-01-15
+
+### Fixed
+
+#### Real-Time Sync Bug Fixes
+- **User ID Consistency** - Fixed mismatch between `user_id` values stored in Supabase (`user1`/`user2`) and what the real-time listener was checking for (`tanmay`/`aanchal`)
+- **Duplicate Widget Saves** - Prevented updates from being saved twice by:
+  - Using `saveUserUpdate()` which saves only the current user's update
+  - Calling `saveReceivedUpdate()` to update lastState without creating history entries when receiving remote updates
+  - Skipping local save when receiving the current user's own update from Supabase
+
+### Changed
+
+- **Refactored `HomePage`** - Moved `HomePage` class from `main.dart` to its own file `home_page.dart` for better code organization
+- **Public `themeModeToString()`** - Made the theme mode helper function public (removed underscore) so it can be accessed from other files
+
+### Added
+
+#### Past Updates Page - Cloud Sync
+- **Supabase Data Fetching** - `PastUpdatesPage` now fetches all past updates from Supabase using `SupabaseService.fetchAllUpdates()`
+- **Image Download** - Remote images are downloaded and cached locally for display
+- **Combined History** - Shows both local history and cloud-synced updates
+- **Delete from Cloud** - Deleting an update also removes it from Supabase
+
+### Technical Details
+
+- Modified files:
+  - `lib/user_home_page.dart` - Fixed real-time sync user ID checks
+  - `lib/update_history_service.dart` - Added `saveUserUpdate()`, `saveReceivedUpdate()`, `_updateUserLastState()`
+  - `lib/past_updates_page.dart` - Added Supabase fetch + image download
+  - `lib/home_page.dart` - New file (refactored from main.dart)
+  - `lib/main.dart` - Made `themeModeToString()` public
+
+---
+
 ## [3.3.0] - 2026-01-15
 
 ### Added
