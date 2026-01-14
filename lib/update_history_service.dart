@@ -231,44 +231,70 @@ class UpdateHistoryService {
         colorHex: user2ColorHex,
       );
 
-      // Check if User 1 has changed
+      // Check if User 1 (Tanmay) has changed
       final lastUser1 = lastState['user1'];
-      if (lastUser1 == null || currentUser1.hasChanged(lastUser1)) {
+      final user1Changed =
+          lastUser1 == null || currentUser1.hasChanged(lastUser1);
+      if (user1Changed) {
         // Only add if there's actual content
         if (user1ImagePath?.isNotEmpty == true ||
             user1Text?.isNotEmpty == true) {
+          final updateId = '${now.millisecondsSinceEpoch}_tanmay';
           history.insert(
             0,
             UserUpdate(
-              id: '${now.millisecondsSinceEpoch}_user1',
+              id: updateId,
               timestamp: now,
               userId: 'user1',
-              userName: 'User 1',
+              userName: 'Tanmay',
               text: user1Text,
               imagePath: user1ImagePath,
               colorHex: user1ColorHex,
             ),
           );
+
+          // Sync ONLY Tanmay's update to Supabase
+          await SupabaseService.syncUpdate(
+            id: updateId,
+            userId: 'tanmay',
+            userName: 'Tanmay',
+            text: user1Text,
+            localImagePath: user1ImagePath,
+            colorHex: user1ColorHex,
+          );
         }
       }
 
-      // Check if User 2 has changed
+      // Check if User 2 (Aanchal) has changed
       final lastUser2 = lastState['user2'];
-      if (lastUser2 == null || currentUser2.hasChanged(lastUser2)) {
+      final user2Changed =
+          lastUser2 == null || currentUser2.hasChanged(lastUser2);
+      if (user2Changed) {
         // Only add if there's actual content
         if (user2ImagePath?.isNotEmpty == true ||
             user2Text?.isNotEmpty == true) {
+          final updateId = '${now.millisecondsSinceEpoch}_aanchal';
           history.insert(
             0,
             UserUpdate(
-              id: '${now.millisecondsSinceEpoch}_user2',
+              id: updateId,
               timestamp: now.add(const Duration(milliseconds: 1)),
               userId: 'user2',
-              userName: 'User 2',
+              userName: 'Aanchal',
               text: user2Text,
               imagePath: user2ImagePath,
               colorHex: user2ColorHex,
             ),
+          );
+
+          // Sync ONLY Aanchal's update to Supabase
+          await SupabaseService.syncUpdate(
+            id: updateId,
+            userId: 'aanchal',
+            userName: 'Aanchal',
+            text: user2Text,
+            localImagePath: user2ImagePath,
+            colorHex: user2ColorHex,
           );
         }
       }
@@ -292,28 +318,6 @@ class UpdateHistoryService {
         user2ImagePath: user2ImagePath,
         user2ColorHex: user2ColorHex,
       );
-
-      // Sync to Supabase (see docs/SUPABASE.md for removal)
-      if (user1ImagePath?.isNotEmpty == true || user1Text?.isNotEmpty == true) {
-        await SupabaseService.syncUpdate(
-          id: '${now.millisecondsSinceEpoch}_tanmay',
-          userId: 'tanmay',
-          userName: 'Tanmay',
-          text: user1Text,
-          localImagePath: user1ImagePath,
-          colorHex: user1ColorHex,
-        );
-      }
-      if (user2ImagePath?.isNotEmpty == true || user2Text?.isNotEmpty == true) {
-        await SupabaseService.syncUpdate(
-          id: '${now.millisecondsSinceEpoch}_aanchal',
-          userId: 'aanchal',
-          userName: 'Aanchal',
-          text: user2Text,
-          localImagePath: user2ImagePath,
-          colorHex: user2ColorHex,
-        );
-      }
     } catch (e) {
       debugPrint('Error saving update to history: $e');
     }

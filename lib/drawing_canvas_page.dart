@@ -483,47 +483,52 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: BrushSize.values.map((size) {
                             final isSelected = size == _selectedBrushSize;
-                            return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedBrushSize = size),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? colorScheme.primary
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: size.width,
-                                      height: size.width,
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : colorScheme.onSurface,
-                                        shape: BoxShape.circle,
+                            return Flexible(
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _selectedBrushSize = size),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: size.width,
+                                        height: size.width,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : colorScheme.onSurface,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      size.label,
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : colorScheme.onSurface,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        fontSize: 12,
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          size.label,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : colorScheme.onSurface,
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                            fontSize: 11,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

@@ -8,9 +8,10 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// See docs/SUPABASE.md for removal instructions
 class SupabaseService {
-  // TODO: Replace with your actual Supabase credentials
-  static const String _supabaseUrl = 'YOUR_SUPABASE_URL';
-  static const String _supabaseAnonKey = 'YOUR_ANON_KEY';
+  // Supabase credentials
+  static const String _supabaseUrl = 'https://kqjrlilptldulylnijbr.supabase.co';
+  static const String _supabaseAnonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxanJsaWxwdGxkdWx5bG5pamJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMjEwODQsImV4cCI6MjA4MjU5NzA4NH0.DzthYx2FEmFrDqBCfOG2zej5tJ-_5fWQ6sbKR4bvH64';
 
   static SupabaseClient? _client;
   static RealtimeChannel? _channel;

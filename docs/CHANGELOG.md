@@ -2,6 +2,36 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.1.0] - 2026-01-15
+
+### Added
+
+#### Supabase Real-Time Sync (Now Working)
+- **Cloud Database**
+  - `updates` table with RLS enabled
+  - Real-time sync between Tanmay and Aanchal's devices
+  - Automatic change detection - only syncs modified user data
+
+- **Cloud Storage**
+  - `update-images` bucket for image uploads
+  - Public access for image URLs
+  - Images uploaded with unique IDs
+
+### Fixed
+
+- **Smart Sync** - Only the user who made changes gets synced to Supabase (no duplicate uploads)
+- **UI Overflow** - Fixed brush size selector overflow in drawing canvas on smaller screens
+
+### Technical Details
+
+- Configured `supabase_service.dart` with real credentials
+- Created database migration for `updates` table
+- Created storage bucket with proper RLS policies
+- Moved Supabase sync inside change detection blocks in `update_history_service.dart`
+- Wrapped brush size buttons with `Flexible` widget in `drawing_canvas_page.dart`
+
+---
+
 ## [3.0.0] - 2025-12-29
 
 ### Added
@@ -146,9 +176,11 @@ All notable changes to the AanTan project are documented in this file.
 - [x] ~~Widget click to open app~~ ✅ Added in v2.0.0
 - [x] ~~Image sharing support~~ ✅ Added in v2.0.0
 - [x] ~~Larger widget size (4×3)~~ ✅ Added in v2.0.0
+- [x] ~~Supabase real-time sync~~ ✅ Added in v3.1.0
 - [ ] Multiple widget sizes (2×2, 4×4)
 - [ ] Custom username labels
 - [ ] Gradient backgrounds
 - [ ] Widget refresh from notification
 - [ ] iOS home screen widget support
 - [ ] Animated image transitions
+
