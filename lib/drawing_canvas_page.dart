@@ -302,40 +302,45 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
       ),
       body: Column(
         children: [
-          // Canvas Area
+          // Canvas Area - Square aspect ratio
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: RepaintBoundary(
-                  key: _canvasKey,
-                  child: GestureDetector(
-                    onPanStart: _onPanStart,
-                    onPanUpdate: _onPanUpdate,
-                    onPanEnd: _onPanEnd,
-                    child: CustomPaint(
-                      painter: _DrawingPainter(
-                        strokes: _strokes,
-                        currentPoints: _currentPoints,
-                        currentColor: _isEraser
-                            ? _backgroundColor
-                            : _selectedColor,
-                        currentStrokeWidth: _selectedBrushSize.width,
-                        backgroundColor: _backgroundColor,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1.0,
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _backgroundColor,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                      size: Size.infinite,
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: RepaintBoundary(
+                      key: _canvasKey,
+                      child: GestureDetector(
+                        onPanStart: _onPanStart,
+                        onPanUpdate: _onPanUpdate,
+                        onPanEnd: _onPanEnd,
+                        child: CustomPaint(
+                          painter: _DrawingPainter(
+                            strokes: _strokes,
+                            currentPoints: _currentPoints,
+                            currentColor: _isEraser
+                                ? _backgroundColor
+                                : _selectedColor,
+                            currentStrokeWidth: _selectedBrushSize.width,
+                            backgroundColor: _backgroundColor,
+                          ),
+                          size: Size.infinite,
+                        ),
+                      ),
                     ),
                   ),
                 ),

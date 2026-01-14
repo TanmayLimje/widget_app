@@ -638,7 +638,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 12),
                       // Preview mimics the actual widget layout
                       SizedBox(
-                        height: 180,
+                        height: 240,
                         child: Row(
                           children: [
                             // User 1 Preview
@@ -666,32 +666,34 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                     const SizedBox(height: 6),
                                     // Update Image
-                                    Expanded(
+                                    AspectRatio(
+                                      aspectRatio: 1.0,
                                       child: Container(
                                         width: double.infinity,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
+                                          color: _user1ImagePath != null
+                                              ? Colors.white.withOpacity(0.9)
+                                              : Colors.white.withOpacity(0.2),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          image: _user1ImagePath != null
-                                              ? DecorationImage(
-                                                  image: FileImage(
-                                                    File(_user1ImagePath!),
-                                                  ),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
                                         ),
-                                        child: _user1ImagePath == null
-                                            ? Icon(
+                                        child: _user1ImagePath != null
+                                            ? ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.file(
+                                                  File(_user1ImagePath!),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                            : Icon(
                                                 Icons.image_outlined,
                                                 color: Colors.white.withOpacity(
                                                   0.5,
                                                 ),
                                                 size: 40,
-                                              )
-                                            : null,
+                                              ),
                                       ),
                                     ),
                                     const SizedBox(height: 6),
@@ -736,32 +738,34 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                     const SizedBox(height: 6),
                                     // Update Image
-                                    Expanded(
+                                    AspectRatio(
+                                      aspectRatio: 1.0,
                                       child: Container(
                                         width: double.infinity,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
+                                          color: _user2ImagePath != null
+                                              ? Colors.white.withOpacity(0.9)
+                                              : Colors.white.withOpacity(0.2),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          image: _user2ImagePath != null
-                                              ? DecorationImage(
-                                                  image: FileImage(
-                                                    File(_user2ImagePath!),
-                                                  ),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
                                         ),
-                                        child: _user2ImagePath == null
-                                            ? Icon(
+                                        child: _user2ImagePath != null
+                                            ? ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.file(
+                                                  File(_user2ImagePath!),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                            : Icon(
                                                 Icons.image_outlined,
                                                 color: Colors.white.withOpacity(
                                                   0.5,
                                                 ),
                                                 size: 40,
-                                              )
-                                            : null,
+                                              ),
                                       ),
                                     ),
                                     const SizedBox(height: 6),

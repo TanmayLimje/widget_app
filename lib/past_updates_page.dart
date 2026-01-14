@@ -353,15 +353,14 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                       bottomLeft: Radius.circular(18),
                       bottomRight: Radius.circular(18),
                     ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 220,
+              child: AspectRatio(
+                aspectRatio: 1.0,
                 child: Image.file(
                   File(update.imagePath!),
                   fit: BoxFit.cover,
+                  width: double.infinity,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      height: 220,
                       color: update.color.withOpacity(0.1),
                       child: Center(
                         child: Icon(

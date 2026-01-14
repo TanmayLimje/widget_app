@@ -35,7 +35,7 @@
             android:layout_weight="1"
             android:layout_marginTop="6dp"
             android:layout_marginBottom="6dp"
-            android:scaleType="centerCrop"
+            android:scaleType="fitCenter"
             android:background="@drawable/image_placeholder"
             android:contentDescription="Tanmay Update" />
 
@@ -83,7 +83,7 @@
             android:layout_weight="1"
             android:layout_marginTop="6dp"
             android:layout_marginBottom="6dp"
-            android:scaleType="centerCrop"
+            android:scaleType="fitCenter"
             android:background="@drawable/image_placeholder"
             android:contentDescription="Aanchal Update" />
 

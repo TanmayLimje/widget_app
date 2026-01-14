@@ -684,7 +684,7 @@ class _UserHomePageState extends State<UserHomePage> {
           const SizedBox(height: 12),
           // Preview mimics the actual widget layout
           SizedBox(
-            height: 180,
+            height: 240,
             child: Row(
               children: [
                 // User 1 (Tanmay) Preview
@@ -710,26 +710,29 @@ class _UserHomePageState extends State<UserHomePage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Expanded(
+                        AspectRatio(
+                          aspectRatio: 1.0,
                           child: Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: user1Image != null
+                                  ? Colors.white.withOpacity(0.9)
+                                  : Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
-                              image: user1Image != null
-                                  ? DecorationImage(
-                                      image: FileImage(File(user1Image)),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
                             ),
-                            child: user1Image == null
-                                ? Icon(
+                            child: user1Image != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(user1Image),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Icon(
                                     Icons.image_outlined,
                                     color: Colors.white.withOpacity(0.5),
                                     size: 40,
-                                  )
-                                : null,
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -771,26 +774,29 @@ class _UserHomePageState extends State<UserHomePage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Expanded(
+                        AspectRatio(
+                          aspectRatio: 1.0,
                           child: Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: user2Image != null
+                                  ? Colors.white.withOpacity(0.9)
+                                  : Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
-                              image: user2Image != null
-                                  ? DecorationImage(
-                                      image: FileImage(File(user2Image)),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
                             ),
-                            child: user2Image == null
-                                ? Icon(
+                            child: user2Image != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(user2Image),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Icon(
                                     Icons.image_outlined,
                                     color: Colors.white.withOpacity(0.5),
                                     size: 40,
-                                  )
-                                : null,
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -874,18 +880,21 @@ class _UserHomePageState extends State<UserHomePage> {
                   color: _userTheme.color.withOpacity(0.3),
                   width: 2,
                 ),
-                image: _userImagePath != null
-                    ? DecorationImage(
-                        image: FileImage(File(_userImagePath!)),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-                color: _userImagePath == null
-                    ? _userTheme.color.withOpacity(0.1)
-                    : null,
+                color: _userImagePath != null
+                    ? Colors.black.withOpacity(0.3)
+                    : _userTheme.color.withOpacity(0.1),
               ),
-              child: _userImagePath == null
-                  ? Column(
+              child: _userImagePath != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        File(_userImagePath!),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    )
+                  : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
@@ -902,8 +911,7 @@ class _UserHomePageState extends State<UserHomePage> {
                           ),
                         ),
                       ],
-                    )
-                  : null,
+                    ),
             ),
           ),
 
