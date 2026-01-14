@@ -2,6 +2,32 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.5.0] - 2026-01-15
+
+### Added
+
+#### History Page Caching & Incremental Sync
+- **Instant UI** - Past Updates page now shows cached data immediately without waiting for API
+- **Delta Fetching** - Only fetches updates newer than the last sync timestamp from Supabase
+- **Background Sync** - New updates sync in the background with a subtle "syncing..." indicator
+- **Persistent Cache** - Remote updates are cached locally for offline access
+
+### Technical Details
+
+- New methods in `update_history_service.dart`:
+  - `loadLastSyncTimestamp()` - Get when we last synced with Supabase
+  - `saveLastSyncTimestamp()` - Store sync timestamp for delta fetching
+  - `loadCachedRemoteUpdates()` - Load previously synced remote updates
+  - `saveCachedRemoteUpdates()` - Cache remote updates locally
+- New method in `supabase_service.dart`:
+  - `fetchUpdatesSince(DateTime since)` - Fetch only updates newer than a timestamp
+- Modified `past_updates_page.dart`:
+  - Shows cached data immediately on page load
+  - Syncs new updates in background with loading indicator
+  - Only makes API call for new updates since last sync
+
+---
+
 ## [3.4.0] - 2026-01-15
 
 ### Fixed

@@ -216,6 +216,33 @@ class SupabaseService {
     }
   }
 
+  /// Fetch updates since a specific timestamp (for incremental sync)
+  /// Returns only updates newer than the given timestamp
+  static Future<List<Map<String, dynamic>>> fetchUpdatesSince(
+    DateTime since,
+  ) async {
+    if (!isConfigured || _client == null) {
+      debugPrint('Supabase not configured, returning empty list');
+      return [];
+    }
+
+    try {
+      final data = await _client!
+          .from('updates')
+          .select()
+          .gt('updated_at', since.toIso8601String())
+          .order('updated_at', ascending: false);
+
+      debugPrint(
+        'Fetched ${data.length} new updates since ${since.toIso8601String()}',
+      );
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      debugPrint('Failed to fetch updates since $since: $e');
+      return [];
+    }
+  }
+
   /// Delete an update from Supabase
   static Future<void> deleteUpdate(String id) async {
     if (!isConfigured || _client == null) return;

@@ -126,8 +126,8 @@ AanTan is a Flutter application that demonstrates how to create Android home scr
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `SupabaseService` | `services/supabase_service.dart` | Cloud database, real-time subscriptions, image storage |
-| `UpdateHistoryService` | `update_history_service.dart` | Local JSON persistence, change detection, cloud sync integration |
+| `SupabaseService` | `services/supabase_service.dart` | Cloud database, real-time subscriptions, image storage, incremental sync |
+| `UpdateHistoryService` | `update_history_service.dart` | Local JSON persistence, change detection, cloud sync integration, remote update caching |
 
 #### Models
 
@@ -150,7 +150,11 @@ AanTan is a Flutter application that demonstrates how to create Android home scr
 | `_pickImage()` | UserHomePage | Camera/gallery/draw image selection |
 | `_saveDrawing()` | DrawingCanvasPage | Export canvas as square PNG |
 | `saveUserUpdate()` | UpdateHistoryService | Save update with change detection |
+| `loadCachedRemoteUpdates()` | UpdateHistoryService | Load previously synced remote updates from cache |
+| `saveCachedRemoteUpdates()` | UpdateHistoryService | Cache remote updates locally for instant UI |
+| `loadLastSyncTimestamp()` | UpdateHistoryService | Get last Supabase sync time for delta fetching |
 | `syncUpdate()` | SupabaseService | Upload update + image to cloud |
+| `fetchUpdatesSince()` | SupabaseService | Fetch only updates newer than a timestamp (incremental sync) |
 
 ### Android Layer
 

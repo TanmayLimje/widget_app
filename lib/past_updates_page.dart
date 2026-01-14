@@ -14,6 +14,7 @@ class PastUpdatesPage extends StatefulWidget {
 class _PastUpdatesPageState extends State<PastUpdatesPage> {
   List<UserUpdate> _updates = [];
   bool _isLoading = true;
+  bool _isSyncing = false; // Shows subtle indicator when fetching new updates
 
   @override
   void initState() {
@@ -22,62 +23,111 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
   }
 
   Future<void> _loadPastUpdates() async {
-    setState(() => _isLoading = true);
+    // Step 1: Show cached data immediately (no loading spinner if we have cache)
+    final localUpdates = await UpdateHistoryService.loadHistory();
+    final cachedRemoteUpdates =
+        await UpdateHistoryService.loadCachedRemoteUpdates();
 
+    // Merge local and cached remote updates
+    final Map<String, UserUpdate> allUpdates = {};
+    for (final update in localUpdates) {
+      allUpdates[update.id] = update;
+    }
+    for (final update in cachedRemoteUpdates) {
+      // Remote updates take precedence (they may have updated image paths)
+      allUpdates[update.id] = update;
+    }
+
+    final cachedList = allUpdates.values.toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    // Show cached data immediately
+    if (cachedList.isNotEmpty || cachedRemoteUpdates.isNotEmpty) {
+      setState(() {
+        _updates = cachedList;
+        _isLoading = false;
+        _isSyncing = true; // Show syncing indicator
+      });
+    }
+
+    // Step 2: Fetch new updates from Supabase (only delta)
     try {
-      // Load local history first
-      final localUpdates = await UpdateHistoryService.loadHistory();
+      final lastSyncTime = await UpdateHistoryService.loadLastSyncTimestamp();
+      final syncStartTime = DateTime.now();
 
-      // Fetch from Supabase
-      final remoteUpdates = await SupabaseService.fetchAllUpdates();
+      List<Map<String, dynamic>> remoteUpdates;
 
-      // Convert remote updates to UserUpdate objects and merge with local
-      final Map<String, UserUpdate> allUpdates = {};
-
-      // Add local updates to map
-      for (final update in localUpdates) {
-        allUpdates[update.id] = update;
+      if (lastSyncTime == null) {
+        // First time - fetch all
+        debugPrint('First sync - fetching all updates from Supabase');
+        remoteUpdates = await SupabaseService.fetchAllUpdates();
+      } else {
+        // Incremental sync - fetch only new updates
+        debugPrint('Incremental sync - fetching updates since $lastSyncTime');
+        remoteUpdates = await SupabaseService.fetchUpdatesSince(lastSyncTime);
       }
 
-      // Add/update with remote updates
-      for (final remote in remoteUpdates) {
-        final id = remote['id'] as String;
-        final imageUrl = remote['image_url'] as String?;
-        String? localImagePath;
+      // Process new remote updates
+      if (remoteUpdates.isNotEmpty) {
+        for (final remote in remoteUpdates) {
+          final id = remote['id'] as String;
+          final imageUrl = remote['image_url'] as String?;
+          String? localImagePath;
 
-        // Check if we already have this update locally with an image
-        if (allUpdates.containsKey(id) && allUpdates[id]!.imagePath != null) {
-          localImagePath = allUpdates[id]!.imagePath;
-        } else if (imageUrl != null && imageUrl.isNotEmpty) {
-          // Download image from Supabase if not cached locally
-          localImagePath = await SupabaseService.downloadImage(imageUrl, id);
+          // Check if we already have this update with an image
+          if (allUpdates.containsKey(id) && allUpdates[id]!.imagePath != null) {
+            final existingPath = allUpdates[id]!.imagePath!;
+            if (File(existingPath).existsSync()) {
+              localImagePath = existingPath;
+            }
+          }
+
+          // Download image if needed
+          if (localImagePath == null &&
+              imageUrl != null &&
+              imageUrl.isNotEmpty) {
+            localImagePath = await SupabaseService.downloadImage(imageUrl, id);
+          }
+
+          final update = UserUpdate(
+            id: id,
+            timestamp: DateTime.parse(remote['updated_at'] as String),
+            userId: remote['user_id'] as String,
+            userName: remote['user_name'] as String,
+            text: remote['text'] as String?,
+            imagePath: localImagePath,
+            colorHex: remote['color_hex'] as String,
+          );
+
+          allUpdates[id] = update;
         }
 
-        final update = UserUpdate(
-          id: id,
-          timestamp: DateTime.parse(remote['updated_at'] as String),
-          userId: remote['user_id'] as String,
-          userName: remote['user_name'] as String,
-          text: remote['text'] as String?,
-          imagePath: localImagePath,
-          colorHex: remote['color_hex'] as String,
-        );
+        // Re-sort and update UI
+        final mergedList = allUpdates.values.toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-        allUpdates[id] = update;
+        // Save to cache for next time
+        await UpdateHistoryService.saveCachedRemoteUpdates(mergedList);
+        await UpdateHistoryService.saveLastSyncTimestamp(syncStartTime);
+
+        setState(() {
+          _updates = mergedList;
+        });
+
+        debugPrint('Synced ${remoteUpdates.length} new updates from Supabase');
+      } else {
+        // No new updates, just save the sync timestamp
+        await UpdateHistoryService.saveLastSyncTimestamp(syncStartTime);
+        debugPrint('No new updates from Supabase');
       }
-
-      // Convert to list and sort by timestamp (newest first)
-      final mergedList = allUpdates.values.toList()
-        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-      setState(() {
-        _updates = mergedList;
-        _isLoading = false;
-      });
     } catch (e) {
-      debugPrint('Error loading past updates: $e');
-      setState(() => _isLoading = false);
+      debugPrint('Error syncing updates from Supabase: $e');
     }
+
+    setState(() {
+      _isLoading = false;
+      _isSyncing = false;
+    });
   }
 
   String _formatDate(DateTime date) {
@@ -255,12 +305,40 @@ class _PastUpdatesPageState extends State<PastUpdatesPage> {
                                   color: colorScheme.primary,
                                 ),
                           ),
-                          Text(
-                            '${_updates.length} updates',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.6),
+                          Row(
+                            children: [
+                              Text(
+                                '${_updates.length} updates',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
+                                    ),
+                              ),
+                              if (_isSyncing) ...[
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.primary.withOpacity(0.5),
+                                  ),
                                 ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'syncing...',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: colorScheme.primary.withOpacity(
+                                          0.6,
+                                        ),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),

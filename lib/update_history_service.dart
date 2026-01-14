@@ -117,6 +117,8 @@ class _UserState {
 class UpdateHistoryService {
   static const String _historyFileName = 'user_updates_history.json';
   static const String _lastStateFileName = 'last_widget_state.json';
+  static const String _syncTimestampFileName = 'last_sync_timestamp.json';
+  static const String _cachedRemoteFileName = 'cached_remote_updates.json';
 
   /// Get the history file path
   static Future<File> _getHistoryFile() async {
@@ -128,6 +130,75 @@ class UpdateHistoryService {
   static Future<File> _getLastStateFile() async {
     final appDir = await getApplicationDocumentsDirectory();
     return File('${appDir.path}/$_lastStateFileName');
+  }
+
+  /// Get the sync timestamp file path
+  static Future<File> _getSyncTimestampFile() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return File('${appDir.path}/$_syncTimestampFileName');
+  }
+
+  /// Get the cached remote updates file path
+  static Future<File> _getCachedRemoteFile() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return File('${appDir.path}/$_cachedRemoteFileName');
+  }
+
+  /// Load the last sync timestamp
+  static Future<DateTime?> loadLastSyncTimestamp() async {
+    try {
+      final file = await _getSyncTimestampFile();
+      if (!await file.exists()) {
+        return null;
+      }
+      final contents = await file.readAsString();
+      final jsonData = jsonDecode(contents) as Map<String, dynamic>;
+      return DateTime.parse(jsonData['timestamp'] as String);
+    } catch (e) {
+      debugPrint('Error loading last sync timestamp: $e');
+      return null;
+    }
+  }
+
+  /// Save the last sync timestamp
+  static Future<void> saveLastSyncTimestamp(DateTime timestamp) async {
+    try {
+      final file = await _getSyncTimestampFile();
+      await file.writeAsString(
+        jsonEncode({'timestamp': timestamp.toIso8601String()}),
+      );
+    } catch (e) {
+      debugPrint('Error saving last sync timestamp: $e');
+    }
+  }
+
+  /// Load cached remote updates (previously downloaded from Supabase)
+  static Future<List<UserUpdate>> loadCachedRemoteUpdates() async {
+    try {
+      final file = await _getCachedRemoteFile();
+      if (!await file.exists()) {
+        return [];
+      }
+      final contents = await file.readAsString();
+      final List<dynamic> jsonList = json.decode(contents);
+      return jsonList
+          .map((item) => UserUpdate.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Error loading cached remote updates: $e');
+      return [];
+    }
+  }
+
+  /// Save cached remote updates
+  static Future<void> saveCachedRemoteUpdates(List<UserUpdate> updates) async {
+    try {
+      final file = await _getCachedRemoteFile();
+      final jsonString = json.encode(updates.map((u) => u.toJson()).toList());
+      await file.writeAsString(jsonString);
+    } catch (e) {
+      debugPrint('Error saving cached remote updates: $e');
+    }
   }
 
   /// Load the last known state
