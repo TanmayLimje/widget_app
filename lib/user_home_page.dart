@@ -5,6 +5,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image/image.dart' as img;
 import 'drawing_canvas_page.dart';
 import 'update_history_service.dart';
 import 'past_updates_page.dart';
@@ -111,14 +112,28 @@ class _UserHomePageState extends State<UserHomePage> {
     });
   }
 
-  Future<String?> _saveImageLocally(XFile image, String userId) async {
+  Future<String?> _saveImageLocally(
+    XFile image,
+    String userId, {
+    bool flipHorizontally = false,
+  }) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final fileName =
           '${userId}_update_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final savedPath = '${appDir.path}/$fileName';
 
-      final bytes = await image.readAsBytes();
+      var bytes = await image.readAsBytes();
+
+      // Flip the image horizontally if from front camera (to fix mirror effect)
+      if (flipHorizontally) {
+        final decodedImage = img.decodeImage(bytes);
+        if (decodedImage != null) {
+          final flippedImage = img.flipHorizontal(decodedImage);
+          bytes = img.encodeJpg(flippedImage, quality: 85);
+        }
+      }
+
       final file = File(savedPath);
       await file.writeAsBytes(bytes);
 
@@ -154,18 +169,24 @@ class _UserHomePageState extends State<UserHomePage> {
     }
 
     // Handle camera/gallery result
+    final imageSource = result as ImageSource;
+    final isFromCamera = imageSource == ImageSource.camera;
+
     try {
       final XFile? image = await _imagePicker.pickImage(
-        source: result as ImageSource,
+        source: imageSource,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front,
       );
 
       if (image != null) {
+        // Flip horizontally if taken from camera (front camera produces mirrored image)
         final savedPath = await _saveImageLocally(
           image,
           'user${widget.userNumber}',
+          flipHorizontally: isFromCamera,
         );
         if (savedPath != null) {
           setState(() {
