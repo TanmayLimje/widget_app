@@ -2,6 +2,41 @@
 
 All notable changes to the AanTan project are documented in this file.
 
+## [3.6.0] - 2026-01-15
+
+### Added
+
+#### Comprehensive Test Suite
+- **73 Unit Tests** - Full coverage of all services and models with mocked database dependencies
+- **Model Tests** - CanvasElement, EmojiElement, TextElement, UserUpdate
+- **Service Tests** - SupabaseService, UpdateHistoryService
+- **Mock Utilities** - Reusable test helpers for file system and Supabase client mocking
+
+### Test Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| CanvasElement | 17 | Hit testing, bounds calculation, copyWith |
+| UserUpdate | 19 | Serialization, deserialization, backward compatibility |
+| SupabaseService | 13 | Configuration, API behavior, error handling |
+| UpdateHistoryService | 22 | File formats, change detection, ID generation |
+| Widget | 2 | Basic app rendering |
+
+### Technical Details
+
+- Added dev dependencies:
+  - `mockito: ^5.4.4` - For generating mock classes
+  - `build_runner: ^2.4.12` - For code generation
+- New test files:
+  - `test/models/canvas_element_test.dart`
+  - `test/models/user_update_test.dart`
+  - `test/services/supabase_service_test.dart`
+  - `test/services/update_history_service_test.dart`
+  - `test/mocks/mock_supabase_client.dart`
+  - `test/mocks/mock_file_system.dart`
+
+---
+
 ## [3.5.0] - 2026-01-15
 
 ### Added

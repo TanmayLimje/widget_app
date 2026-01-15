@@ -202,3 +202,53 @@ The app supports 8 predefined color themes:
 - Bitmaps loaded with `inSampleSize = 2` to reduce memory usage
 - Graceful fallback to placeholder if image file is missing
 - Images displayed with `centerCrop` scaling
+
+## Testing Architecture
+
+### Test Directory Structure
+
+```
+test/
+├── mocks/
+│   ├── mock_supabase_client.dart    # Mockito annotations for Supabase
+│   └── mock_file_system.dart        # Temp directory utilities
+├── models/
+│   ├── canvas_element_test.dart     # EmojiElement, TextElement, hit testing
+│   └── user_update_test.dart        # Serialization, backward compatibility
+├── services/
+│   ├── supabase_service_test.dart   # API behavior, configuration
+│   └── update_history_service_test.dart  # File ops, change detection
+└── widget_test.dart                 # Basic widget rendering
+```
+
+### Test Categories
+
+| Category | File | Tests | Coverage |
+|----------|------|-------|----------|
+| Canvas Models | `canvas_element_test.dart` | 17 | EmojiElement, TextElement, getBounds, containsPoint |
+| User Updates | `user_update_test.dart` | 19 | toJson, fromJson, fromSnapshot, color getter |
+| Supabase Service | `supabase_service_test.dart` | 13 | isConfigured, syncUpdate, fetchAll, delete |
+| History Service | `update_history_service_test.dart` | 22 | File formats, change detection, ID generation |
+
+### Running Tests
+
+```bash
+# Run all tests
+flutter test
+
+# Run with verbose output
+flutter test --reporter expanded
+
+# Run specific test file
+flutter test test/models/canvas_element_test.dart
+
+# Run with coverage
+flutter test --coverage
+```
+
+### Mock Strategy
+
+- **SupabaseService**: Tests behavior without actual network calls since the service uses static state
+- **UpdateHistoryService**: Uses temporary directories for file-based testing
+- **Models**: Pure unit tests with no mocking required
+

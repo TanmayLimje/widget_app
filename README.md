@@ -9,6 +9,14 @@ flutter pub get
 flutter run
 ```
 
+## Testing
+
+```bash
+flutter test
+```
+
+73 unit tests covering all services and models with mocked database dependencies.
+
 ## Documentation
 
 - [📖 Full Documentation](docs/README.md)
